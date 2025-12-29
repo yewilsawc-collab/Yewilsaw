@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Messenger Pro | Yewilsaw Chanie</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Messenger Pro — Multi‑user</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Replace placeholders with your Firebase project config -->
   <script id="firebase-config" type="application/json">
   {
     "apiKey": "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
@@ -16,107 +17,283 @@
   }
   </script>
 </head>
-<body class="bg-[#0f172a] text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-gray-900 text-gray-100 min-h-screen flex">
 
-  <header class="p-4 bg-[#1e293b] border-b border-slate-700 flex justify-between items-center shadow-lg">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-white shadow-lg">M</div>
-      <div>
-        <h1 class="text-xs font-black uppercase tracking-widest text-indigo-400">Messenger Pro</h1>
-        <p class="text-[8px] text-slate-500 font-bold uppercase">Linked to Academic Agent Pro</p>
-      </div>
+  <!-- Sidebar: Auth + Users -->
+  <aside class="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
+    <div class="p-4 border-b border-gray-700">
+      <h1 class="text-lg font-bold text-blue-400">Messenger Pro</h1>
+      <p id="current-user" class="text-xs text-gray-400 mt-1">Not signed in</p>
     </div>
-    <div id="stats-total" class="text-[9px] font-bold bg-slate-900 text-indigo-400 px-3 py-1 rounded-full border border-slate-700">Connecting...</div>
-  </header>
 
-  <main class="flex-1 p-4 overflow-y-auto space-y-4 max-w-2xl mx-auto w-full" id="chat-container"></main>
+    <!-- Auth Forms -->
+    <div class="p-4 space-y-3 border-b border-gray-700">
+      <form id="signup-form" class="space-y-2">
+        <div class="text-xs font-semibold text-gray-300">Sign up</div>
+        <input id="signup-email" type="email" placeholder="Email" class="w-full bg-gray-700 px-2 py-2 rounded" />
+        <input id="signup-password" type="password" placeholder="Password" class="w-full bg-gray-700 px-2 py-2 rounded" />
+        <button class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded text-sm">Create account</button>
+      </form>
 
-  <footer class="p-4 bg-[#1e293b]/90 backdrop-blur-md border-t border-slate-700 sticky bottom-0">
-    <form id="chat-form" class="flex gap-2 max-w-2xl mx-auto">
-      <input id="chat-input" type="text" autocomplete="off" 
-             placeholder="Message Yewilsaw Chanie Mekonen (+251 973 729 140)..." 
-             class="flex-1 bg-slate-900 border border-slate-700 rounded-xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" />
-      <button id="send-btn" type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg active:scale-95 transition-transform">
-        Send
+      <form id="login-form" class="space-y-2">
+        <div class="text-xs font-semibold text-gray-300">Log in</div>
+        <input id="login-email" type="email" placeholder="Email" class="w-full bg-gray-700 px-2 py-2 rounded" />
+        <input id="login-password" type="password" placeholder="Password" class="w-full bg-gray-700 px-2 py-2 rounded" />
+        <button class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm">Log in</button>
+      </form>
+
+      <button id="google-login" class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-sm">Continue with Google</button>
+      <button id="logout-btn" class="w-full bg-gray-600 hover:bg-gray-500 py-2 rounded text-sm mt-2">Log out</button>
+    </div>
+
+    <!-- Users list -->
+    <div class="p-4">
+      <div class="text-xs font-semibold text-gray-300 mb-2">Contacts</div>
+      <div id="users-list" class="space-y-1 max-h-[40vh] overflow-y-auto"></div>
+    </div>
+
+    <!-- Threads list -->
+    <div class="p-4 border-t border-gray-700">
+      <div class="text-xs font-semibold text-gray-300 mb-2">Threads</div>
+      <div id="threads-list" class="space-y-1 max-h-[35vh] overflow-y-auto"></div>
+    </div>
+  </aside>
+
+  <!-- Chat area -->
+  <main class="flex-1 flex flex-col">
+    <header class="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
+      <div>
+        <h2 id="active-thread-name" class="text-base font-semibold">No thread selected</h2>
+        <p id="message-count" class="text-xs text-emerald-400">0 messages</p>
+      </div>
+      <button id="new-thread-btn" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded text-sm">
+        New thread with selected user
       </button>
-    </form>
-  </footer>
+    </header>
 
+    <section id="chat-container" class="flex-1 p-4 overflow-y-auto space-y-2"></section>
+
+    <footer class="p-4 bg-gray-800 border-t border-gray-700">
+      <form id="chat-form" class="flex gap-2">
+        <input id="chat-input" type="text" autocomplete="off" placeholder="Type a message..."
+               class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm" />
+        <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white text-sm">Send</button>
+        <button type="button" id="ask-ai-btn" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-white text-sm">
+          Ask AI
+        </button>
+      </form>
+    </footer>
+  </main>
+
+  <!-- App script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+    import {
+      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+      GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import {
+      getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, where, orderBy
+    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
     const config = JSON.parse(document.getElementById("firebase-config").textContent);
     const app = initializeApp(config);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // Optional: set to your Functions URL to secure Gemini calls
+    const FUNCTIONS_BASE = "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net";
+    // If you insist on client-side Gemini (not recommended for production), store key here temporarily:
     const GEMINI_KEY = "AIzaSyDRHoimQpL6x1475X-KdA2cUmB7svg5-Gg";
 
-    signInAnonymously(auth).catch(e => console.error("Auth Error:", e));
+    let currentUser = null;
+    let selectedUser = null;     // user to start a thread with
+    let activeThreadId = null;   // current thread
 
-    async function askAI(message) {
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
+    // Utility: deterministic threadId for two users (sorted uids)
+    function makeThreadId(uidA, uidB) {
+      return [uidA, uidB].sort().join("_");
+    }
+
+    // Auth UI handlers
+    document.getElementById("logout-btn").onclick = () => signOut(auth);
+    document.getElementById("google-login").onclick = async () => {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    };
+    document.getElementById("signup-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("signup-email").value.trim();
+      const password = document.getElementById("signup-password").value.trim();
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await ensureProfile(cred.user);
+    };
+    document.getElementById("login-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+      await signInWithEmailAndPassword(auth, email, password);
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user || null;
+      document.getElementById("current-user").textContent =
+        currentUser ? `Signed in as ${currentUser.email || currentUser.uid}` : "Not signed in";
+      if (currentUser) {
+        await ensureProfile(currentUser);
+        subscribeUsers();
+        subscribeThreads();
+      } else {
+        document.getElementById("users-list").innerHTML = "";
+        document.getElementById("threads-list").innerHTML = "";
+        document.getElementById("chat-container").innerHTML = "";
+        activeThreadId = null;
+      }
+    });
+
+    async function ensureProfile(user) {
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          uid: user.uid,
+          email: user.email || null,
+          displayName: user.displayName || user.email || "Anonymous",
+          createdAt: Date.now()
         });
-        const data = await res.json();
-        
-        if (data.error) {
-          console.error("Gemini Error:", data.error.message);
-          return "⚠️ AI Error: " + data.error.message;
-        }
-        
-        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "AI is thinking...";
-      } catch (e) {
-        return "Connection error. Check your API key or network.";
       }
     }
 
-    document.getElementById("chat-form").onsubmit = async (e) => {
-      e.preventDefault();
-      const input = document.getElementById("chat-input");
-      const btn = document.getElementById("send-btn");
-      const text = input.value.trim();
-      if (!text) return;
+    // Subscribe to user list (excluding current user)
+    function subscribeUsers() {
+      const qUsers = query(collection(db, "users"));
+      onSnapshot(qUsers, (snap) => {
+        const list = document.getElementById("users-list");
+        list.innerHTML = "";
+        snap.forEach(docSnap => {
+          const u = docSnap.data();
+          if (!currentUser || u.uid === currentUser.uid) return;
+          const btn = document.createElement("button");
+          btn.className = "w-full text-left bg-gray-700/60 hover:bg-gray-700 px-3 py-2 rounded text-sm";
+          btn.textContent = u.displayName || u.email || u.uid;
+          btn.onclick = () => { selectedUser = u; };
+          list.appendChild(btn);
+        });
+      });
+    }
 
-      btn.disabled = true;
-      btn.innerText = "...";
+    // Subscribe to threads involving current user
+    function subscribeThreads() {
+      const qThreads = query(collection(db, "threads"));
+      onSnapshot(qThreads, (snap) => {
+        const list = document.getElementById("threads-list");
+        list.innerHTML = "";
+        snap.forEach(docSnap => {
+          const t = docSnap.data();
+          if (!currentUser || !t.participants || !t.participants.includes(currentUser.uid)) return;
+          const btn = document.createElement("button");
+          btn.className = "w-full text-left bg-gray-700/60 hover:bg-gray-700 px-3 py-2 rounded text-sm";
+          btn.textContent = t.title || t.participants.join(" • ");
+          btn.onclick = () => openThread(docSnap.id, t);
+          list.appendChild(btn);
+        });
+      });
+    }
 
-      try {
-        await addDoc(collection(db, "messages"), { role: "user", text, timestamp: Date.now() });
-        input.value = "";
-        const reply = await askAI(text);
-        await addDoc(collection(db, "messages"), { role: "ai", text: reply, timestamp: Date.now() });
-      } catch (err) {
-        console.error("Firebase Error:", err);
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "Send";
-      }
+    // Create or open a thread with selected user
+    document.getElementById("new-thread-btn").onclick = async () => {
+      if (!currentUser || !selectedUser) return alert("Select a contact first.");
+      const threadId = makeThreadId(currentUser.uid, selectedUser.uid);
+      const ref = doc(db, "threads", threadId);
+      await setDoc(ref, {
+        participants: [currentUser.uid, selectedUser.uid],
+        title: `${currentUser.email || currentUser.uid} ↔ ${selectedUser.email || selectedUser.uid}`,
+        createdAt: Date.now()
+      }, { merge: true });
+      openThread(threadId, { participants: [currentUser.uid, selectedUser.uid] });
     };
 
-    const q = query(collection(db, "messages"), orderBy("timestamp"));
-    onSnapshot(q, (snap) => {
-      const container = document.getElementById("chat-container");
-      const docs = snap.docs.map(d => d.data());
-      document.getElementById("stats-total").textContent = `${docs.length} Messages Live`;
-      
-      container.innerHTML = docs.map(m => `
-        <div class="flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} mb-3">
-          <div class="max-w-[85%] p-3 rounded-2xl text-[13px] leading-relaxed shadow-md ${
-            m.role === 'user' 
-            ? 'bg-indigo-600 text-white rounded-tr-none' 
-            : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-none'
-          }">
-            ${m.text.replace(/\n/g, '<br>')}
+    function openThread(threadId, threadData) {
+      activeThreadId = threadId;
+      document.getElementById("active-thread-name").textContent = threadData.title || threadId;
+      subscribeMessages(threadId);
+    }
+
+    // Subscribe to messages in active thread
+    function subscribeMessages(threadId) {
+      const qMsgs = query(collection(db, "threads", threadId, "messages"), orderBy("timestamp"));
+      onSnapshot(qMsgs, (snap) => {
+        const container = document.getElementById("chat-container");
+        const msgs = snap.docs.map(d => d.data());
+        document.getElementById("message-count").textContent = `${msgs.length} messages`;
+        container.innerHTML = msgs.map(m => `
+          <div class="flex ${m.senderId === currentUser?.uid ? 'justify-end' : 'justify-start'}">
+            <div class="max-w-[75%] p-3 rounded-lg text-sm ${m.senderId === currentUser?.uid ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'}">
+              ${m.text}
+              <div class="text-[10px] text-gray-400 mt-1">${new Date(m.timestamp).toLocaleString()}</div>
+            </div>
           </div>
-        </div>
-      `).join('');
-      container.scrollTop = container.scrollHeight;
-    });
+        `).join('');
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+
+    // Send message
+    document.getElementById("chat-form").onsubmit = async (e) => {
+      e.preventDefault();
+      if (!activeThreadId || !currentUser) return alert("Open a thread first.");
+      const input = document.getElementById("chat-input");
+      const text = input.value.trim();
+      if (!text) return;
+      await addDoc(collection(db, "threads", activeThreadId, "messages"), {
+        senderId: currentUser.uid,
+        text,
+        timestamp: Date.now()
+      });
+      input.value = "";
+    };
+
+    // Ask AI (client-side demo; prefer Cloud Functions in production)
+    document.getElementById("ask-ai-btn").onclick = async () => {
+      if (!activeThreadId || !currentUser) return alert("Open a thread first.");
+      const thinkingId = await addDoc(collection(db, "threads", activeThreadId, "messages"), {
+        senderId: "ai",
+        text: "Thinking...",
+        timestamp: Date.now()
+      });
+
+      // Option A: call Cloud Function (recommended)
+      // const res = await fetch(`${FUNCTIONS_BASE}/askAI`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ threadId: activeThreadId, userId: currentUser.uid })
+      // });
+      // const data = await res.json();
+      // const aiText = data.reply || "⚠️ No AI response.";
+
+      // Option B: direct Gemini (development only)
+      const aiText = await askGemini("Continue the current conversation with a helpful response.");
+
+      await addDoc(collection(db, "threads", activeThreadId, "messages"), {
+        senderId: "ai",
+        text: aiText,
+        timestamp: Date.now()
+      });
+    };
+
+    async function askGemini(message) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
+        });
+        const data = await res.json();
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ No AI response.";
+      } catch (e) {
+        return "⚠️ AI connection error.";
+      }
+    }
   </script>
 </body>
-</html>
+    </html>
