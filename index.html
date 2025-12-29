@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Messenger Pro | Yewilsaw Chanie</title>
+  <title>Personal Messaging Site</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 🔑 Firebase Config: Replace with your actual values from Firebase Console -->
   <script id="firebase-config" type="application/json">
   {
     "apiKey": "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
@@ -16,62 +17,60 @@
   }
   </script>
 </head>
-<body class="bg-[#0f172a] text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col font-sans">
 
-  <header class="p-4 bg-[#1e293b] border-b border-slate-700 flex justify-between items-center shadow-md">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">M</div>
-      <div>
-        <h1 class="text-xs font-black uppercase tracking-widest text-indigo-400">Messenger Pro</h1>
-        <p class="text-[8px] text-slate-500 font-bold uppercase tracking-tight">Personal Collaboration Hub</p>
-      </div>
-    </div>
-    <div id="stats-total" class="text-[9px] font-bold bg-slate-900 text-indigo-400 px-3 py-1 rounded-full border border-slate-700">0 Messages Live</div>
+  <!-- Header -->
+  <header class="p-4 bg-gray-800 flex justify-between items-center">
+    <h1 class="text-lg font-bold text-blue-400">Personal Messaging Site</h1>
+    <span id="stats-total" class="text-sm text-emerald-400">0 Messages</span>
   </header>
 
-  <main class="flex-1 p-4 overflow-y-auto space-y-4 max-w-2xl mx-auto w-full" id="chat-container">
-    </main>
+  <!-- Chat Container -->
+  <main class="flex-1 p-4 overflow-y-auto" id="chat-container"></main>
 
-  <footer class="p-4 bg-[#1e293b]/90 backdrop-blur-md border-t border-slate-700 sticky bottom-0">
-    <form id="chat-form" class="flex gap-2 max-w-2xl mx-auto">
-      <input id="chat-input" type="text" autocomplete="off" 
-             placeholder="Message Yewilsaw Chanie Mekonen (+251 973 729 140)..." 
-             class="flex-1 bg-slate-900 border border-slate-700 rounded-xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-600" />
-      <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl text-white font-bold text-sm shadow-lg shadow-indigo-600/20 transition-transform active:scale-95">
-        Send
-      </button>
+  <!-- Footer Input -->
+  <footer class="p-4 bg-gray-800">
+    <form id="chat-form" class="flex gap-2">
+      <input id="chat-input" type="text" autocomplete="off" placeholder="Type a message..."
+             class="flex-1 bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+      <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-white">Send</button>
     </form>
   </footer>
 
+  <!-- Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
+    // Firebase setup
     const config = JSON.parse(document.getElementById("firebase-config").textContent);
     const app = initializeApp(config);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // 🔑 Gemini API key: Replace with your own from Google AI Studio
     const GEMINI_KEY = "AIzaSyDRHoimQpL6x1475X-KdA2cUmB7svg5-Gg";
 
-    signInAnonymously(auth).catch(err => console.error("Auth failed:", err));
+    // Sign in anonymously
+    signInAnonymously(auth);
 
+    // Ask Gemini AI
     async function askAI(message) {
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            contents: [{ parts: [{ text: `You are an AI assistant for Yewilsaw Chanie. Help with this: ${message}` }] }] 
-          })
+          body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
         });
         const data = await res.json();
-        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "I am thinking about your request...";
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ No AI response.";
       } catch (e) {
-        return "Connection error. Please check your network.";
+        return "⚠️ AI connection error.";
       }
     }
 
+    // Handle chat form
     document.getElementById("chat-form").onsubmit = async (e) => {
       e.preventDefault();
       const input = document.getElementById("chat-input");
@@ -85,20 +84,16 @@
       await addDoc(collection(db, "messages"), { role: "ai", text: reply, timestamp: Date.now() });
     };
 
+    // Render chat in real time
     const q = query(collection(db, "messages"), orderBy("timestamp"));
     onSnapshot(q, (snap) => {
       const container = document.getElementById("chat-container");
       const docs = snap.docs.map(d => d.data());
-      document.getElementById("stats-total").textContent = `${docs.length} Messages Live`;
-      
+      document.getElementById("stats-total").textContent = `${docs.length} Messages`;
       container.innerHTML = docs.map(m => `
-        <div class="flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} mb-3">
-          <div class="max-w-[85%] p-3 rounded-2xl text-xs shadow-md ${
-            m.role === 'user' 
-            ? 'bg-indigo-600 text-white rounded-tr-none' 
-            : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-none'
-          }">
-            ${m.text.replace(/\n/g, '<br>')}
+        <div class="flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} mb-2">
+          <div class="max-w-[75%] p-3 rounded-lg text-sm ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'}">
+            ${m.text}
           </div>
         </div>
       `).join('');
@@ -107,4 +102,3 @@
   </script>
 </body>
 </html>
-
