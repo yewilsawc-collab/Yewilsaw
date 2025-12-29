@@ -43,30 +43,43 @@
     </form>
   </footer>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+     // ... (Keep your Firebase imports and config the same)
 
-    const config = JSON.parse(document.getElementById("firebase-config").textContent);
-    const app = initializeApp(config);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
     const GEMINI_KEY = "AIzaSyDRHoimQpL6x1475X-KdA2cUmB7svg5-Gg";
-
-    signInAnonymously(auth);
 
     async function askAI(message) {
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        // Updated to the v1 endpoint for better stability
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
+          body: JSON.stringify({ 
+            contents: [{ 
+              parts: [{ 
+                text: `You are an AI assistant for Yewilsaw Chanie Mekonen. 
+                       Respond to this message: ${message}` 
+              }] 
+            }] 
+          })
         });
+        
         const data = await res.json();
-        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Response pending...";
-      } catch (e) { return "System connection error."; }
+        
+        // Error handling if the key is blocked or limited
+        if (data.error) {
+          console.error("Gemini Error:", data.error.message);
+          return "⚠️ AI Error: " + data.error.message;
+        }
+
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "AI is thinking...";
+      } catch (e) { 
+        console.error("Fetch Error:", e);
+        return "Connection Error. Check your internet or API key."; 
+      }
     }
+
+    // ... (Keep the rest of your form submission and snapshot logic)
+
 
     document.getElementById("chat-form").onsubmit = async (e) => {
       e.preventDefault();
