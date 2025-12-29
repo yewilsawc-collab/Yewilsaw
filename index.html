@@ -1,299 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Messenger Pro — Multi‑user</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Replace placeholders with your Firebase project config -->
-  <script id="firebase-config" type="application/json">
-  {
-    "apiKey": "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
-    "authDomain": "university-outreach-log.firebaseapp.com",
-    "projectId": "university-outreach-log",
-    "storageBucket": "university-outreach-log.firebasestorage.app",
-    "messagingSenderId": "566149647802",
-    "appId": "1:566149647802:web:490c7cc3d10b7cd7732183"
-  }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WVU PhD Tracker | Yewilsaw Chanie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #050a15; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .wvu-gold { color: #eaaa00; }
+        .wvu-blue-bg { background-color: #002855; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex">
+<body>
+    <div id="root"></div>
 
-  <!-- Sidebar: Auth + Users -->
-  <aside class="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
-    <div class="p-4 border-b border-gray-700">
-      <h1 class="text-lg font-bold text-blue-400">Messenger Pro</h1>
-      <p id="current-user" class="text-xs text-gray-400 mt-1">Not signed in</p>
-    </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-    <!-- Auth Forms -->
-    <div class="p-4 space-y-3 border-b border-gray-700">
-      <form id="signup-form" class="space-y-2">
-        <div class="text-xs font-semibold text-gray-300">Sign up</div>
-        <input id="signup-email" type="email" placeholder="Email" class="w-full bg-gray-700 px-2 py-2 rounded" />
-        <input id="signup-password" type="password" placeholder="Password" class="w-full bg-gray-700 px-2 py-2 rounded" />
-        <button class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded text-sm">Create account</button>
-      </form>
+        // Mock Lucide Icons (since we are using the CDN version)
+        const Icon = ({ name, size = 20, className = "" }) => {
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
 
-      <form id="login-form" class="space-y-2">
-        <div class="text-xs font-semibold text-gray-300">Log in</div>
-        <input id="login-email" type="email" placeholder="Email" class="w-full bg-gray-700 px-2 py-2 rounded" />
-        <input id="login-password" type="password" placeholder="Password" class="w-full bg-gray-700 px-2 py-2 rounded" />
-        <button class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm">Log in</button>
-      </form>
+        function App() {
+            const [messages, setMessages] = useState([
+                { 
+                    role: 'assistant', 
+                    text: "Welcome Yewilsaw. I've analyzed your M.Sc. research on ionic liquids and mordenite. For West Virginia University, we should prioritize your 'Preliminary Waiver Review' before the Jan 1st deadline. How can I assist with your SOP or application today?" 
+                }
+            ]);
+            const [input, setInput] = useState("");
+            const scrollRef = useRef(null);
 
-      <button id="google-login" class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-sm">Continue with Google</button>
-      <button id="logout-btn" class="w-full bg-gray-600 hover:bg-gray-500 py-2 rounded text-sm mt-2">Log out</button>
-    </div>
+            useEffect(() => {
+                // Initialize Lucide icons after render
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [messages]);
 
-    <!-- Users list -->
-    <div class="p-4">
-      <div class="text-xs font-semibold text-gray-300 mb-2">Contacts</div>
-      <div id="users-list" class="space-y-1 max-h-[40vh] overflow-y-auto"></div>
-    </div>
+            const handleSend = (e) => {
+                e.preventDefault();
+                if (!input.trim()) return;
 
-    <!-- Threads list -->
-    <div class="p-4 border-t border-gray-700">
-      <div class="text-xs font-semibold text-gray-300 mb-2">Threads</div>
-      <div id="threads-list" class="space-y-1 max-h-[35vh] overflow-y-auto"></div>
-    </div>
-  </aside>
+                const userMsg = input;
+                setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+                setInput("");
 
-  <!-- Chat area -->
-  <main class="flex-1 flex flex-col">
-    <header class="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
-      <div>
-        <h2 id="active-thread-name" class="text-base font-semibold">No thread selected</h2>
-        <p id="message-count" class="text-xs text-emerald-400">0 messages</p>
-      </div>
-      <button id="new-thread-btn" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded text-sm">
-        New thread with selected user
-      </button>
-    </header>
+                // Simulated AI Logic for PhD Application
+                setTimeout(() => {
+                    let response = "";
+                    if (userMsg.toLowerCase().includes("sop")) {
+                        response = "Your SOP for WVU should emphasize your kinetic modeling expertise and your intent to use their high-performance computing (Linux/MATLAB) environments.";
+                    } else if (userMsg.toLowerCase().includes("waiver")) {
+                        response = "I recommend emailing Chemistry.DGS@mail.wvu.edu. Mention your published research in 'Interfacial Phenomena' to request the application fee waiver code.";
+                    } else {
+                        response = "Research insight logged. WVU's Physical Chemistry faculty are particularly interested in material stability and reactivity mechanisms.";
+                    }
+                    setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+                }, 600);
+            };
 
-    <section id="chat-container" class="flex-1 p-4 overflow-y-auto space-y-2"></section>
+            return (
+                <div className="flex flex-col h-screen max-w-2xl mx-auto bg-[#050a15] text-slate-100 shadow-2xl overflow-hidden border-x border-slate-800">
+                    
+                    <header className="p-5 wvu-blue-bg border-b-2 border-[#eaaa00] flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-[#eaaa00] p-2 rounded-lg">
+                                <Icon name="beaker" className="text-[#002855]" />
+                            </div>
+                            <div>
+                                <h1 className="text-lg font-black tracking-tight wvu-gold leading-none uppercase">WVU MOUNTAINEER HUB</h1>
+                                <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest mt-1">Physical Chemistry Ph.D. Portal</p>
+                            </div>
+                        </div>
+                    </header>
 
-    <footer class="p-4 bg-gray-800 border-t border-gray-700">
-      <form id="chat-form" class="flex gap-2">
-        <input id="chat-input" type="text" autocomplete="off" placeholder="Type a message..."
-               class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm" />
-        <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white text-sm">Send</button>
-        <button type="button" id="ask-ai-btn" class="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-white text-sm">
-          Ask AI
-        </button>
-      </form>
-    </footer>
-  </main>
+                    <div className="grid grid-cols-3 gap-2 p-4 bg-slate-900/50 border-b border-slate-800 text-center">
+                        <div className="p-2 rounded bg-slate-900 border border-slate-700">
+                            <p className="text-[8px] text-slate-500 uppercase font-black">Deadline</p>
+                            <p className="text-[10px] font-bold wvu-gold">JAN 01</p>
+                        </div>
+                        <div className="p-2 rounded bg-slate-900 border border-slate-700">
+                            <p className="text-[8px] text-slate-500 uppercase font-black">Major Code</p>
+                            <p className="text-[10px] font-bold text-blue-400">1439</p>
+                        </div>
+                        <div className="p-2 rounded bg-slate-900 border border-slate-700">
+                            <p className="text-[8px] text-slate-500 uppercase font-black">Status</p>
+                            <p className="text-[10px] font-bold text-emerald-400">Ready</p>
+                        </div>
+                    </div>
 
-  <!-- App script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import {
-      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-      GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
-    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import {
-      getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, where, orderBy
-    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+                    <main className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                        {messages.map((m, i) => (
+                            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[85%] p-4 rounded-2xl shadow-lg border ${
+                                    m.role === 'user' 
+                                    ? 'wvu-blue-bg border-[#eaaa00]/30 text-white rounded-tr-none' 
+                                    : 'bg-slate-900 border-slate-800 text-slate-200 rounded-tl-none'
+                                }`}>
+                                    <p className="text-sm leading-relaxed">{m.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                        <div ref={scrollRef} />
+                    </main>
 
-    const config = JSON.parse(document.getElementById("firebase-config").textContent);
-    const app = initializeApp(config);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+                    <footer className="p-4 bg-slate-900 border-t border-slate-800">
+                        <form onSubmit={handleSend} className="relative">
+                            <input 
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Ask about WVU research or SOP..."
+                                className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-4 pr-12 text-sm outline-none focus:border-[#eaaa00]"
+                            />
+                            <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#eaaa00] p-2 rounded-lg text-[#002855]">
+                                <Icon name="send" size={18} />
+                            </button>
+                        </form>
+                        <div className="mt-3 flex justify-center gap-4 opacity-40">
+                            <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-slate-400">
+                                <Icon name="file-text" size={10} /> Prelim Review Ready
+                            </span>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
 
-    // Optional: set to your Functions URL to secure Gemini calls
-    const FUNCTIONS_BASE = "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net";
-    // If you insist on client-side Gemini (not recommended for production), store key here temporarily:
-    const GEMINI_KEY = "AIzaSyDRHoimQpL6x1475X-KdA2cUmB7svg5-Gg";
-
-    let currentUser = null;
-    let selectedUser = null;     // user to start a thread with
-    let activeThreadId = null;   // current thread
-
-    // Utility: deterministic threadId for two users (sorted uids)
-    function makeThreadId(uidA, uidB) {
-      return [uidA, uidB].sort().join("_");
-    }
-
-    // Auth UI handlers
-    document.getElementById("logout-btn").onclick = () => signOut(auth);
-    document.getElementById("google-login").onclick = async () => {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    };
-    document.getElementById("signup-form").onsubmit = async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("signup-email").value.trim();
-      const password = document.getElementById("signup-password").value.trim();
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await ensureProfile(cred.user);
-    };
-    document.getElementById("login-form").onsubmit = async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("login-email").value.trim();
-      const password = document.getElementById("login-password").value.trim();
-      await signInWithEmailAndPassword(auth, email, password);
-    };
-
-    onAuthStateChanged(auth, async (user) => {
-      currentUser = user || null;
-      document.getElementById("current-user").textContent =
-        currentUser ? `Signed in as ${currentUser.email || currentUser.uid}` : "Not signed in";
-      if (currentUser) {
-        await ensureProfile(currentUser);
-        subscribeUsers();
-        subscribeThreads();
-      } else {
-        document.getElementById("users-list").innerHTML = "";
-        document.getElementById("threads-list").innerHTML = "";
-        document.getElementById("chat-container").innerHTML = "";
-        activeThreadId = null;
-      }
-    });
-
-    async function ensureProfile(user) {
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
-        await setDoc(ref, {
-          uid: user.uid,
-          email: user.email || null,
-          displayName: user.displayName || user.email || "Anonymous",
-          createdAt: Date.now()
-        });
-      }
-    }
-
-    // Subscribe to user list (excluding current user)
-    function subscribeUsers() {
-      const qUsers = query(collection(db, "users"));
-      onSnapshot(qUsers, (snap) => {
-        const list = document.getElementById("users-list");
-        list.innerHTML = "";
-        snap.forEach(docSnap => {
-          const u = docSnap.data();
-          if (!currentUser || u.uid === currentUser.uid) return;
-          const btn = document.createElement("button");
-          btn.className = "w-full text-left bg-gray-700/60 hover:bg-gray-700 px-3 py-2 rounded text-sm";
-          btn.textContent = u.displayName || u.email || u.uid;
-          btn.onclick = () => { selectedUser = u; };
-          list.appendChild(btn);
-        });
-      });
-    }
-
-    // Subscribe to threads involving current user
-    function subscribeThreads() {
-      const qThreads = query(collection(db, "threads"));
-      onSnapshot(qThreads, (snap) => {
-        const list = document.getElementById("threads-list");
-        list.innerHTML = "";
-        snap.forEach(docSnap => {
-          const t = docSnap.data();
-          if (!currentUser || !t.participants || !t.participants.includes(currentUser.uid)) return;
-          const btn = document.createElement("button");
-          btn.className = "w-full text-left bg-gray-700/60 hover:bg-gray-700 px-3 py-2 rounded text-sm";
-          btn.textContent = t.title || t.participants.join(" • ");
-          btn.onclick = () => openThread(docSnap.id, t);
-          list.appendChild(btn);
-        });
-      });
-    }
-
-    // Create or open a thread with selected user
-    document.getElementById("new-thread-btn").onclick = async () => {
-      if (!currentUser || !selectedUser) return alert("Select a contact first.");
-      const threadId = makeThreadId(currentUser.uid, selectedUser.uid);
-      const ref = doc(db, "threads", threadId);
-      await setDoc(ref, {
-        participants: [currentUser.uid, selectedUser.uid],
-        title: `${currentUser.email || currentUser.uid} ↔ ${selectedUser.email || selectedUser.uid}`,
-        createdAt: Date.now()
-      }, { merge: true });
-      openThread(threadId, { participants: [currentUser.uid, selectedUser.uid] });
-    };
-
-    function openThread(threadId, threadData) {
-      activeThreadId = threadId;
-      document.getElementById("active-thread-name").textContent = threadData.title || threadId;
-      subscribeMessages(threadId);
-    }
-
-    // Subscribe to messages in active thread
-    function subscribeMessages(threadId) {
-      const qMsgs = query(collection(db, "threads", threadId, "messages"), orderBy("timestamp"));
-      onSnapshot(qMsgs, (snap) => {
-        const container = document.getElementById("chat-container");
-        const msgs = snap.docs.map(d => d.data());
-        document.getElementById("message-count").textContent = `${msgs.length} messages`;
-        container.innerHTML = msgs.map(m => `
-          <div class="flex ${m.senderId === currentUser?.uid ? 'justify-end' : 'justify-start'}">
-            <div class="max-w-[75%] p-3 rounded-lg text-sm ${m.senderId === currentUser?.uid ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-200'}">
-              ${m.text}
-              <div class="text-[10px] text-gray-400 mt-1">${new Date(m.timestamp).toLocaleString()}</div>
-            </div>
-          </div>
-        `).join('');
-        container.scrollTop = container.scrollHeight;
-      });
-    }
-
-    // Send message
-    document.getElementById("chat-form").onsubmit = async (e) => {
-      e.preventDefault();
-      if (!activeThreadId || !currentUser) return alert("Open a thread first.");
-      const input = document.getElementById("chat-input");
-      const text = input.value.trim();
-      if (!text) return;
-      await addDoc(collection(db, "threads", activeThreadId, "messages"), {
-        senderId: currentUser.uid,
-        text,
-        timestamp: Date.now()
-      });
-      input.value = "";
-    };
-
-    // Ask AI (client-side demo; prefer Cloud Functions in production)
-    document.getElementById("ask-ai-btn").onclick = async () => {
-      if (!activeThreadId || !currentUser) return alert("Open a thread first.");
-      const thinkingId = await addDoc(collection(db, "threads", activeThreadId, "messages"), {
-        senderId: "ai",
-        text: "Thinking...",
-        timestamp: Date.now()
-      });
-
-      // Option A: call Cloud Function (recommended)
-      // const res = await fetch(`${FUNCTIONS_BASE}/askAI`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ threadId: activeThreadId, userId: currentUser.uid })
-      // });
-      // const data = await res.json();
-      // const aiText = data.reply || "⚠️ No AI response.";
-
-      // Option B: direct Gemini (development only)
-      const aiText = await askGemini("Continue the current conversation with a helpful response.");
-
-      await addDoc(collection(db, "threads", activeThreadId, "messages"), {
-        senderId: "ai",
-        text: aiText,
-        timestamp: Date.now()
-      });
-    };
-
-    async function askGemini(message) {
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
-        });
-        const data = await res.json();
-        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ No AI response.";
-      } catch (e) {
-        return "⚠️ AI connection error.";
-      }
-    }
-  </script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
-    </html>
+</html>
