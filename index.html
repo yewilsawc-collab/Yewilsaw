@@ -455,7 +455,7 @@
       await updateDoc(tRef, { pins });
       loadPinned(activeThreadId);
     };
-
+    
     async function loadPinned(threadId) {
       const tRef = doc(db, "threads", threadId);
       const tSnap = await getDoc(tRef);
