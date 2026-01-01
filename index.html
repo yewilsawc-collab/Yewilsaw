@@ -2,18 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Messaging Pro | Advanced</title>
-
-  <!-- Tailwind + Hammer -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Messaging Pro | Switch Account</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
-
-  <!-- Firebase config: replace with your keys -->
   <script id="firebase-config" type="application/json">
   {
-    apiKey": "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
+    "apiKey": "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
     "authDomain": "university-outreach-log.firebaseapp.com",
     "projectId": "university-outreach-log",
     "storageBucket": "university-outreach-log.firebasestorage.app",
@@ -21,629 +16,179 @@
     "appId": "1:566149647802:web:490c7cc3d10b7cd7732183"
   }
   </script>
-
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #050a15; color: white; overflow: hidden; }
+    .wvu-blue { background-color: #002855; }
+    .wvu-gold-text { color: #eaaa00; }
+    .wvu-gold-bg { background-color: #eaaa00; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .animate-pop { animation: pop 180ms ease-out; }
-    @keyframes pop { from { transform: scale(0.98); opacity: 0.6; } to { transform: scale(1); opacity: 1; } }
-    .markdown p { margin-bottom: 0.5rem; }
-    .markdown h1, .markdown h2, .markdown h3 { font-weight: 700; margin: 0.75rem 0 0.5rem; }
-    .markdown ul { list-style: disc; padding-left: 1rem; }
-    .reaction { transition: transform 120ms ease; }
-    .reaction:hover { transform: scale(1.08); }
+    #swipe-zone { touch-action: pan-y !important; }
+    .active-tab { border-bottom: 2px solid #eaaa00; color: #eaaa00 !important; }
+    .pane-item.active { color: #eaaa00; border-color: #eaaa00; background: rgba(234, 170, 0, 0.1); }
   </style>
 </head>
-<body class="bg-[#0f172a] text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
+<body class="min-h-screen flex flex-col">
 
-  <!-- Header -->
-  <header class="sticky top-0 z-50 bg-[#0f172a]/95 backdrop-blur-md p-4 border-b border-slate-800 flex justify-between items-center">
+  <header class="wvu-blue p-5 border-b-2 border-[#eaaa00] m-4 rounded-3xl flex justify-between items-center shadow-2xl">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-        <span class="font-black text-white text-lg">Y</span>
-      </div>
+      <div class="w-10 h-10 wvu-gold-bg rounded-xl flex items-center justify-center shadow-lg"><span class="font-black text-[#002855] text-lg">Y</span></div>
       <div>
-        <h1 class="text-xs font-black tracking-widest text-blue-400 uppercase leading-none">Messaging Pro</h1>
-        <p id="user-display" class="text-[9px] text-slate-500 font-bold uppercase mt-1">Authenticating...</p>
+        <h1 class="text-xl font-black tracking-tighter wvu-gold-text uppercase leading-none">Messaging Pro</h1>
+        <p id="user-display" class="text-[9px] text-white/60 font-bold uppercase mt-1 tracking-widest">Loading Account...</p>
       </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <span id="presence-indicator" class="text-[9px] px-2 py-1 rounded bg-slate-800 border border-slate-700">Offline</span>
-      <button id="logout-btn" onclick="window.processLogout()"
-              class="hidden bg-red-900/20 border border-red-500/30 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase text-red-400">
-        Logout
-      </button>
     </div>
   </header>
 
-  <!-- Tabs -->
-  <nav class="sticky top-[73px] z-40 bg-[#0f172a] border-b border-slate-800 flex overflow-x-auto no-scrollbar">
-    <button onclick="window.switchTab('chats')" id="tab-chats"
-            class="flex-1 min-w-[90px] py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-blue-500 text-blue-400">
-      Chats
-    </button>
-    <button onclick="window.switchTab('ai')" id="tab-ai"
-            class="flex-1 min-w-[90px] py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-transparent text-slate-500">
-      AI
-    </button>
-    <button onclick="window.switchTab('notes')" id="tab-notes"
-            class="flex-1 min-w-[90px] py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-transparent text-slate-500">
-      Notes
-    </button>
-    <button onclick="window.switchTab('accounts')" id="tab-accounts"
-            class="flex-1 min-w-[90px] py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-transparent text-slate-500">
-      Accounts
-    </button>
+  <nav class="bg-[#050a15] border-b border-slate-800 flex overflow-x-auto no-scrollbar">
+    <button onclick="window.switchTab('chats')" id="tab-chats" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">Chats</button>
+    <button onclick="window.switchTab('ai')" id="tab-ai" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">AI</button>
+    <button onclick="window.switchTab('notes')" id="tab-notes" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">Notes</button>
+    <button onclick="window.switchTab('accounts')" id="tab-accounts" class="flex-1 min-w-[80px] py-4 text-[9px] font-black uppercase tracking-widest text-slate-500">Accounts</button>
   </nav>
 
-  <!-- Filters -->
-  <div class="sticky top-[120px] z-30 bg-[#0f172a] border-b border-slate-800 p-2 flex gap-2 items-center">
-    <button onclick="window.setThreadFilter('all')" class="px-3 py-1 text-[9px] rounded bg-slate-800 border border-slate-700">All</button>
-    <button onclick="window.setThreadFilter('dm')" class="px-3 py-1 text-[9px] rounded bg-slate-800 border border-slate-700">DM</button>
-    <button onclick="window.setThreadFilter('group')" class="px-3 py-1 text-[9px] rounded bg-slate-800 border border-slate-700">Group</button>
-    <button onclick="window.setThreadFilter('ai')" class="px-3 py-1 text-[9px] rounded bg-slate-800 border border-slate-700">AI</button>
-    <div class="flex-1 relative">
-      <input id="search-input" type="text" placeholder="Search chats..." class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-[10px]" />
-      <button onclick="window.runSearch()" class="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] px-2 py-1 rounded bg-blue-600">Go</button>
+  <div id="pane-bar-container" class="bg-slate-900/50 border-b border-slate-800 px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar">
+    <div id="chat-panes" class="flex gap-2">
+        <button onclick="window.setPane('all')" class="pane-item active px-4 py-2 rounded-xl text-[8px] font-black uppercase border border-slate-700">All</button>
+        <button onclick="window.setPane('group')" class="pane-item px-4 py-2 rounded-xl text-[8px] font-black uppercase border border-slate-700 text-slate-500">Groups</button>
+        <button onclick="window.setPane('dm')" class="pane-item px-4 py-2 rounded-xl text-[8px] font-black uppercase border border-slate-700 text-slate-500">DMs</button>
+    </div>
+    <div id="account-panes" class="hidden flex gap-2">
+        <button onclick="window.setAccountView('profile')" id="pane-profile" class="pane-item active px-4 py-2 rounded-xl text-[8px] font-black uppercase border border-slate-700">Active Profile</button>
+        <button onclick="window.setAccountView('switch')" id="pane-switch" class="pane-item px-4 py-2 rounded-xl text-[8px] font-black uppercase border border-slate-700 text-slate-500">Switch Account</button>
     </div>
   </div>
 
-  <!-- Main -->
-  <main id="swipe-zone" class="flex-1 p-4 pb-40 max-w-2xl mx-auto w-full no-scrollbar" style="touch-action: pan-y;">
-    <!-- Chats -->
-    <div id="chats-view" class="space-y-4">
-      <div id="thread-list" class="space-y-2"></div>
-      <div id="pinned-bar" class="hidden bg-slate-800/40 p-2 rounded-xl border border-slate-700/50">
-        <p class="text-[10px] text-blue-400 font-bold uppercase">Pinned messages</p>
-        <div id="pinned-list" class="space-y-2 mt-2"></div>
-      </div>
-      <hr class="border-slate-800">
-      <div id="thread-view" class="space-y-4"></div>
-      <div id="typing-indicator" class="hidden text-[10px] text-slate-400">Someone is typing…</div>
-      <div id="read-receipts" class="hidden text-[10px] text-slate-500">Read by: —</div>
+  <main id="swipe-zone" class="flex-1 p-4 pb-40 max-w-2xl mx-auto w-full overflow-y-auto no-scrollbar">
+    
+    <div id="chats-view" class="hidden space-y-3">
+        <div id="uni-list" class="space-y-3"></div>
     </div>
 
-    <!-- AI -->
-    <div id="ai-view" class="hidden space-y-4">
-      <div class="grid grid-cols-3 gap-2">
-        <div class="rounded-xl border border-slate-700 p-3">
-          <p class="text-[9px] text-slate-400">Deadline</p>
-          <p class="text-[12px] font-black text-yellow-400">JAN 01</p>
+    <div id="accounts-view" class="hidden">
+        <div id="view-profile" class="space-y-4">
+            <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center">
+                <div class="w-20 h-20 wvu-gold-bg rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-black text-[#002855] shadow-xl">
+                    <span id="user-initial">?</span>
+                </div>
+                <h2 id="user-email-display" class="text-sm font-bold text-white mb-1">Guest User</h2>
+                <p class="text-[9px] text-slate-500 uppercase font-black tracking-tighter mb-6">Prospective PhD Applicant</p>
+                <button onclick="window.processLogout()" class="w-full py-3 bg-red-900/20 border border-red-500/30 rounded-xl text-[10px] font-black uppercase text-red-400">Sign Out</button>
+            </div>
         </div>
-        <div class="rounded-xl border border-slate-700 p-3">
-          <p class="text-[9px] text-slate-400">Major code</p>
-          <p class="text-[12px] font-black text-blue-400">1439</p>
-        </div>
-        <div class="rounded-xl border border-slate-700 p-3">
-          <p class="text-[9px] text-slate-400">Status</p>
-          <p class="text-[12px] font-black text-emerald-400">Ready</p>
-        </div>
-      </div>
 
-      <div class="flex items-start gap-3 bg-slate-800/60 p-4 rounded-2xl border border-slate-700/50">
-        <div class="w-8 h-8 rounded-full bg-blue-500/30 ring-2 ring-blue-400/30"></div>
-        <div>
-          <p class="text-[11px] text-slate-200">Welcome. I can summarize threads, draft replies, and analyze files.</p>
-          <div class="mt-2 flex gap-2">
-            <span class="text-[9px] px-2 py-1 rounded bg-emerald-900/20 border border-emerald-700 text-emerald-300">PRELIM REVIEW READY</span>
-            <span class="text-[9px] px-2 py-1 rounded bg-blue-900/20 border border-blue-700 text-blue-300">Context: Messaging</span>
-          </div>
+        <div id="view-switch" class="hidden space-y-4">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+                <h3 class="text-[10px] font-black uppercase wvu-gold-text mb-4">Login to Another Account</h3>
+                <input id="identity-email" type="email" placeholder="Email" class="w-full bg-[#050a15] border border-slate-800 p-4 rounded-xl text-xs mb-3 outline-none focus:border-[#eaaa00]" />
+                <input id="identity-pass" type="password" placeholder="Password" class="w-full bg-[#050a15] border border-slate-800 p-4 rounded-xl text-xs mb-4 outline-none focus:border-[#eaaa00]" />
+                <div class="flex gap-2">
+                    <button onclick="window.processAuth()" class="flex-1 wvu-gold-bg text-[#002855] py-4 rounded-xl text-[10px] font-black uppercase">Sign In</button>
+                    <button onclick="window.processSignUp()" class="flex-1 bg-slate-800 border border-slate-700 py-4 rounded-xl text-[10px] font-black uppercase">Register</button>
+                </div>
+            </div>
         </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2">
-        <button onclick="window.aiSuggest('summarize')" class="text-[10px] bg-slate-800 border border-slate-700 rounded p-2">Summarize current thread</button>
-        <button onclick="window.aiSuggest('reply')" class="text-[10px] bg-slate-800 border border-slate-700 rounded p-2">Draft a reply</button>
-        <button onclick="window.aiSuggest('analyze')" class="text-[10px] bg-slate-800 border border-slate-700 rounded p-2">Analyze last file</button>
-        <button onclick="window.aiSuggest('tasks')" class="text-[10px] bg-slate-800 border border-slate-700 rounded p-2">Extract action items</button>
-      </div>
-
-      <form id="ai-form" class="relative flex items-center gap-2">
-        <input id="ai-input" type="text" autocomplete="off" placeholder="Ask the assistant..."
-               class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-4 pl-5 pr-24 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none shadow-2xl" />
-        <button type="button" onclick="window.openEmojiPicker('ai-input')" class="absolute right-12 top-1/2 -translate-y-1/2 bg-slate-700 px-2 rounded text-[11px]">🙂</button>
-        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 p-2.5 rounded-xl text-white">➤</button>
-      </form>
-      <div id="ai-log" class="space-y-3"></div>
     </div>
 
-    <!-- Notes -->
-    <div id="notes-view" class="hidden space-y-4">
-      <div class="bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 space-y-2">
-        <input id="note-title" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-[10px] text-blue-400 font-bold uppercase outline-none" placeholder="Note title" />
-        <div contenteditable="true" id="note-content"
-             class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-[11px] text-slate-200 min-h-[120px]">
-          Start writing with bold, italics, lists, and links. Paste content to preserve formatting.
-        </div>
-        <div class="flex gap-2">
-          <button onclick="window.saveNote()" class="flex-1 py-2 bg-blue-600 text-white text-[10px] font-black uppercase rounded shadow-lg">Save note</button>
-          <button onclick="window.exportNote('md')" class="px-3 py-2 bg-slate-800 border border-slate-700 text-[10px] rounded">Export MD</button>
-          <button onclick="window.exportNote('pdf')" class="px-3 py-2 bg-slate-800 border border-slate-700 text-[10px] rounded">Export PDF</button>
-        </div>
-      </div>
-      <div id="notes-list" class="space-y-2"></div>
-    </div>
+    <div id="ai-view" class="hidden"><div id="chat-container" class="space-y-4"></div></div>
+    <div id="notes-view" class="hidden"><div id="vault-editor"></div></div>
 
-    <!-- Accounts -->
-    <div id="accounts-view" class="hidden space-y-6">
-      <div class="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50">
-        <h2 class="text-xs font-black uppercase tracking-widest text-blue-400 mb-4 text-center">Identity</h2>
-        <div class="space-y-3">
-          <input id="identity-email" type="email" placeholder="Email Address" class="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500" />
-          <input id="identity-pass" type="password" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500" />
-          <div class="flex gap-2">
-            <button onclick="window.processAuth()" class="flex-1 bg-blue-600 py-3 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-500/20">Sign In</button>
-            <button onclick="window.processSignUp()" class="flex-1 bg-slate-800 border border-slate-700 py-3 rounded-xl text-[10px] font-black uppercase">Create</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-slate-800/40 p-6 rounded-2xl border border-slate-700/50 space-y-2">
-        <h3 class="text-[10px] font-black uppercase tracking-widest text-blue-400">New thread</h3>
-        <div class="grid grid-cols-1 gap-2">
-          <input id="new-thread-title" class="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-xs" placeholder="Thread title">
-          <select id="new-thread-type" class="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-xs">
-            <option value="dm">DM</option>
-            <option value="group">Group</option>
-            <option value="ai">AI</option>
-          </select>
-        </div>
-        <button onclick="window.createThread()" class="w-full bg-emerald-600 py-3 rounded-xl text-[10px] font-black uppercase shadow-lg">Create thread</button>
-      </div>
-    </div>
   </main>
 
-  <!-- Footer composer -->
-  <footer class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0f172a] via-[#0f172a] to-transparent">
-    <form id="chat-form" class="max-w-md mx-auto relative flex items-center gap-2">
-      <input type="file" id="chat-file" class="hidden" multiple onchange="window.handleFileUpload(this.files)" />
-      <button type="button" onclick="document.getElementById('chat-file').click()"
-              class="bg-slate-800 border border-slate-700 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-400 text-xl font-bold shadow-xl">+</button>
-      <div class="relative flex-1">
-        <input id="chat-input" type="text" autocomplete="off" placeholder="Type a message..."
-               class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-4 pl-5 pr-28 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none shadow-2xl" />
-        <button type="button" onclick="window.openEmojiPicker('chat-input')"
-                class="absolute right-16 top-1/2 -translate-y-1/2 bg-slate-700 px-2 rounded text-[11px]">🙂</button>
-        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 p-2.5 rounded-xl text-white">➤</button>
-      </div>
+  <footer class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#050a15] to-transparent">
+    <form id="chat-form" class="max-w-md mx-auto flex items-center gap-3">
+      <button type="button" class="w-12 h-12 rounded-2xl wvu-blue border border-[#eaaa00]/30 wvu-gold-text font-bold">+</button>
+      <input id="chat-input" type="text" placeholder="Message..." class="flex-1 bg-slate-800 border border-slate-700 rounded-2xl py-4 px-5 text-sm outline-none focus:border-[#eaaa00]" />
+      <button type="submit" class="wvu-gold-bg p-3 rounded-xl text-[#002855]">➤</button>
     </form>
   </footer>
 
-  <!-- Scripts -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-    import {
-      getAuth, signInAnonymously, onAuthStateChanged, signOut,
-      signInWithEmailAndPassword, createUserWithEmailAndPassword,
-      sendEmailVerification, updateProfile
-    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-    import {
-      getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query,
-      orderBy, addDoc, deleteDoc, updateDoc, where, getDocs, limit, startAfter
-    } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
-    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, collection, onSnapshot, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    const config = JSON.parse(document.getElementById("firebase-config").textContent);
-    const app = initializeApp(config);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
+const config = JSON.parse(document.getElementById("firebase-config").textContent);
+const app = initializeApp(config);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let currentUser = null;
+const tabs = ['chats', 'ai', 'notes', 'accounts'];
 
-    let currentUser = null;
-    let activeThreadId = null;
-    let threadFilter = 'all';
-    let msgPaginationCursor = null;
+onAuthStateChanged(auth, (user) => {
+  if (user) { 
+    currentUser = user; 
+    document.getElementById("user-display").textContent = user.isAnonymous ? "Guest Mode" : user.email;
+    document.getElementById("user-email-display").textContent = user.isAnonymous ? "Guest Mode" : user.email;
+    document.getElementById("user-initial").textContent = (user.email || "G")[0].toUpperCase();
+    init(); 
+  } else { signInAnonymously(auth); }
+});
 
-    const tabs = ['chats','ai','notes','accounts'];
+function init() { syncChat(); window.switchTab('chats'); }
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) { await signInAnonymously(auth); return; }
-      currentUser = user;
-      document.getElementById("user-display").textContent = user.isAnonymous ? "Guest Session" : (user.email || "User");
-      document.getElementById("logout-btn").classList.toggle("hidden", user.isAnonymous);
-      setPresence(true);
-      await ensureProfile(user);
-      init();
-    });
+// --- ACCOUNT PANE SWITCHER ---
+window.setAccountView = (view) => {
+    document.getElementById('view-profile').classList.toggle('hidden', view !== 'profile');
+    document.getElementById('view-switch').classList.toggle('hidden', view !== 'switch');
+    document.querySelectorAll('#account-panes .pane-item').forEach(el => el.classList.remove('active', 'text-slate-500'));
+    document.getElementById(`pane-${view}`).classList.add('active');
+};
 
-    async function ensureProfile(user) {
-      const pRef = doc(db, "profiles", user.uid);
-      const snap = await getDoc(pRef);
-      if (!snap.exists()) {
-        await setDoc(pRef, {
-          uid: user.uid,
-          email: user.email || null,
-          displayName: user.displayName || (user.email ? user.email.split("@")[0] : "Guest"),
-          avatarUrl: null,
-          createdAt: Date.now(),
-          roles: ["user"],
-          aiEnabled: true
-        });
-      }
-    }
+// --- TAB SWITCHER ---
+window.switchTab = (tab) => {
+  tabs.forEach(t => {
+    document.getElementById(`${t}-view`).classList.add('hidden');
+    document.getElementById(`tab-${t}`).classList.remove('active-tab');
+  });
+  document.getElementById(`${tab}-view`).classList.remove('hidden');
+  document.getElementById(`tab-${tab}`).classList.add('active-tab');
 
-    function setPresence(online) {
-      const el = document.getElementById("presence-indicator");
-      el.textContent = online ? "Online" : "Offline";
-      el.className = "text-[9px] px-2 py-1 rounded " + (online ? "bg-emerald-900/20 border border-emerald-700 text-emerald-300" : "bg-slate-800 border border-slate-700");
-    }
+  // Pane Logic
+  document.getElementById('chat-panes').classList.toggle('hidden', tab !== 'chats');
+  document.getElementById('account-panes').classList.toggle('hidden', tab !== 'accounts');
+};
 
-    window.switchTab = (tab) => {
-      tabs.forEach(t => {
-        document.getElementById(${t}-view).classList.add('hidden');
-        document.getElementById(tab-${t}).className =
-          "flex-1 min-w-[90px] py-3 text-[10px] font-black uppercase tracking-widest border-b-2 " +
-          (t === tab ? "border-blue-500 text-blue-400" : "border-transparent text-slate-500");
-      });
-      document.getElementById(${tab}-view).classList.remove('hidden');
-    };
+// --- AUTH ACTIONS ---
+window.processAuth = async () => {
+    const e = document.getElementById("identity-email").value;
+    const p = document.getElementById("identity-pass").value;
+    try { await signInWithEmailAndPassword(auth, e, p); window.setAccountView('profile'); } 
+    catch (err) { alert(err.message); }
+};
+window.processSignUp = async () => {
+    const e = document.getElementById("identity-email").value;
+    const p = document.getElementById("identity-pass").value;
+    try { await createUserWithEmailAndPassword(auth, e, p); alert("Account Created!"); } 
+    catch (err) { alert(err.message); }
+};
+window.processLogout = () => signOut(auth).then(() => location.reload());
 
-    function setupSwipes() {
-      const mc = new Hammer(document.getElementById("swipe-zone"));
-      mc.on("swipeleft", () => { const idx = tabs.indexOf(getActiveTab()); if (idx < tabs.length-1) window.switchTab(tabs[idx+1]); });
-      mc.on("swiperight", () => { const idx = tabs.indexOf(getActiveTab()); if (idx > 0) window.switchTab(tabs[idx-1]); });
-    }
-    function getActiveTab(){ return tabs.find(t => !document.getElementById(${t}-view).classList.contains('hidden')); }
+// Swipes
+function setupSwipes() {
+  const mc = new Hammer(document.getElementById("swipe-zone"));
+  mc.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
+  mc.on("swipeleft", () => { 
+    const idx = tabs.indexOf(tabs.find(t => !document.getElementById(`${t}-view`).classList.contains('hidden'))); 
+    if(idx < tabs.length-1) window.switchTab(tabs[idx+1]); 
+  });
+  mc.on("swiperight", () => { 
+    const idx = tabs.indexOf(tabs.find(t => !document.getElementById(`${t}-view`).classList.contains('hidden'))); 
+    if(idx > 0) window.switchTab(tabs[idx-1]); 
+  });
+}
+setupSwipes();
 
-    function init() {
-      setupSwipes();
-      syncThreads();
-      loadNotes();
-      window.switchTab('chats');
-    }
-
-    // Thread filter
-    window.setThreadFilter = (type) => { threadFilter = type; syncThreads(); };
-
-    // Threads list
-    function syncThreads() {
-      const q = query(collection(db, "threads"), orderBy("createdAt", "desc"));
-      onSnapshot(q, (snap) => {
-        const items = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(t => Array.isArray(t.members) ? t.members.includes(currentUser.uid) : t.type === 'ai');
-        const filtered = threadFilter === 'all' ? items : items.filter(t => (t.type || 'dm') === threadFilter);
-        renderThreadList(filtered);
-        if (!activeThreadId && filtered.length) { openThread(filtered[0].id); }
-      });
-    }
-
-    function renderThreadList(items) {
-      const list = document.getElementById("thread-list");
-      list.innerHTML = items.map(t => `
-        <button onclick="window.openThread('${t.id}')" class="w-full flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700/50 animate-pop">
-          <div class="flex items-center gap-3">
-            <div class="w-7 h-7 rounded-lg ${t.type==='ai' ? 'bg-blue-500/30 ring-2 ring-blue-400/30':'bg-slate-700'}"></div>
-            <div>
-              <p class="text-[11px] font-bold text-slate-200">${escapeHtml(t.title || '(untitled)')}</p>
-              <p class="text-[9px] text-slate-500">${(t.type?.toUpperCase() || 'THREAD')}</p>
-            </div>
-          </div>
-          <span class="text-[9px] text-slate-500">${new Date(t.createdAt).toLocaleTimeString()}</span>
-        </button>
-      `).join('') || '<p class="text-[11px] text-slate-400">No threads yet. Create one from Accounts → New thread.</p>';
-    }
-
-    window.openThread = (threadId) => { activeThreadId = threadId; msgPaginationCursor = null; syncMessages(threadId); loadPinned(threadId); };
-
-    // Message pagination + typing indicator
-    let typingTimeout = null;
-    function showTyping() {
-      const el = document.getElementById("typing-indicator");
-      el.classList.remove("hidden");
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => el.classList.add("hidden"), 1500);
-    }
-
-    function syncMessages(threadId) {
-      const q = query(collection(db, "threads", threadId, "messages"), orderBy("createdAt", "asc"));
-      onSnapshot(q, (snap) => {
-        const cont = document.getElementById("thread-view");
-        cont.innerHTML = snap.docs.map(doc => renderMessage(doc.id, doc.data())).join('');
-        cont.scrollTop = cont.scrollHeight;
-        showReadReceipts(snap.docs);
-      });
-    }
-
-    function renderMessage(id, d) {
-      const isMe = d.senderUid === currentUser.uid;
-      const isAssistant = d.senderUid === "assistant";
-      const reactionBar = `
-        <div class="flex gap-1 mt-1">
-          <button onclick="window.react('${id}','👍')" class="reaction text-[10px] px-2 py-1 rounded bg-slate-700">👍</button>
-          <button onclick="window.react('${id}','❤️')" class="reaction text-[10px] px-2 py-1 rounded bg-slate-700">❤️</button>
-          <button onclick="window.react('${id}','🔥')" class="reaction text-[10px] px-2 py-1 rounded bg-slate-700">🔥</button>
-          <button onclick="window.pinMessage('${id}')" class="reaction text-[10px] px-2 py-1 rounded bg-slate-700">📌</button>
-          ${isMe ? <button onclick="window.editMessagePrompt('${id}','${escapeAttr(d.text||'')}')" class="reaction text-[10px] px-2 py-1 rounded bg-slate-700">✏️</button>:''}
-          ${isMe ? <button onclick="window.deleteMessage('${id}')" class="reaction text-[10px] px-2 py-1 rounded bg-slate-700">🗑️</button>:''}
-        </div>`;
-
-      if (isAssistant) {
-        return `<div class="flex justify-start items-start gap-2">
-          <div class="w-6 h-6 rounded-full bg-blue-500/40 ring-2 ring-blue-400/30"></div>
-          <div class="max-w-[85%] p-3 rounded-2xl text-[11px] bg-slate-800 border border-slate-700 markdown">${renderMarkdown(d.text)}
-            ${renderAttachments(d.attachments)}${reactionBar}
-          </div>
-        </div>`;
-      }
-      return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
-        <div class="max-w-[85%] p-3 rounded-2xl text-[11px] ${isMe ? 'bg-blue-600 text-white' : 'bg-slate-800 border border-slate-700'} markdown">
-          ${renderMarkdown(d.text)}${renderAttachments(d.attachments)}${reactionBar}
-          <div class="text-[9px] mt-1 ${isMe ? 'text-blue-200' : 'text-slate-500'}">${d.status || 'sent'}</div>
-        </div>
-      </div>`;
-    }
-
-    function renderAttachments(arr) {
-      if (!Array.isArray(arr) || !arr.length) return '';
-      return arr.map(a => <br><a href="${a.url}" target="_blank" class="underline text-[9px] font-bold text-blue-200">View: ${escapeHtml(a.name)}</a>).join('');
-    }
-
-    function renderMarkdown(text) {
-      if (!text) return '';
-      // very light markdown: bold, italics, code, link
-      let s = escapeHtml(text);
-      s = s.replace(/\\(.+?)\\/g, '<strong>$1</strong>')
-           .replace(/\(.+?)\/g, '<em>$1</em>')
-           .replace(/(.+?)/g, '<code class="bg-slate-900 px-1 rounded">$1</code>')
-           .replace(/\[(.+?)\]\((https?:\/\/[^\s]+)\)/g, '<a class="underline" href="$2" target="_blank">$1</a>')
-           .replace(/\n/g, '<br>');
-      return s;
-    }
-
-    // Composer
-    document.getElementById("chat-form").onsubmit = async (e) => {
-      e.preventDefault();
-      const input = document.getElementById("chat-input");
-      const text = input.value.trim();
-      if (!text || !activeThreadId) return;
-      showTyping();
-      await sendMessage({ threadId: activeThreadId, text });
-      input.value = "";
-      setTimeout(() => markDelivered(), 400);
-    };
-
-    async function sendMessage({ threadId, text, attachments = [] }) {
-      await addDoc(collection(db, "threads", threadId, "messages"), {
-        text, senderUid: currentUser.uid, attachments, createdAt: Date.now(), status: "sent", reactions: []
-      });
-    }
-    function markDelivered() {
-      const rr = document.getElementById("read-receipts");
-      rr.classList.remove("hidden");
-      rr.textContent = "Delivered";
-    }
-    function showReadReceipts(docs) {
-      const rr = document.getElementById("read-receipts");
-      const readers = new Set();
-      docs.forEach(doc => {
-        const d = doc.data();
-        if (Array.isArray(d.readBy)) d.readBy.forEach(r => readers.add(r));
-      });
-      if (readers.size) {
-        rr.classList.remove("hidden");
-        rr.textContent = "Read by: " + Array.from(readers).slice(0,5).join(", ");
-      }
-    }
-
-    // Reactions / edit / delete / pin
-    window.react = async (messageId, emoji) => {
-      const mRef = doc(db, "threads", activeThreadId, "messages", messageId);
-      const snap = await getDoc(mRef);
-      const data = snap.data();
-      const reactions = Array.isArray(data.reactions) ? data.reactions : [];
-      reactions.push({ emoji, uid: currentUser.uid, at: Date.now() });
-      await updateDoc(mRef, { reactions });
-    };
-
-    window.editMessagePrompt = async (messageId, currentText) => {
-      const next = prompt("Edit message:", currentText);
-      if (next == null) return;
-      await updateDoc(doc(db, "threads", activeThreadId, "messages", messageId), { text: next, editedAt: Date.now() });
-    };
-
-    window.deleteMessage = async (messageId) => {
-      if (!confirm("Delete this message?")) return;
-      await updateDoc(doc(db, "threads", activeThreadId, "messages", messageId), { deleted: true, text: "[deleted]" });
-    };
-
-    window.pinMessage = async (messageId) => {
-      const tRef = doc(db, "threads", activeThreadId);
-      const tSnap = await getDoc(tRef);
-      const pins = (tSnap.data().pins || []);
-      if (!pins.includes(messageId)) pins.push(messageId);
-      await updateDoc(tRef, { pins });
-      loadPinned(activeThreadId);
-    };
-    
-    async function loadPinned(threadId) {
-      const tRef = doc(db, "threads", threadId);
-      const tSnap = await getDoc(tRef);
-      const pins = tSnap.exists() ? (tSnap.data().pins || []) : [];
-      const bar = document.getElementById("pinned-bar");
-      const list = document.getElementById("pinned-list");
-      if (!pins.length) { bar.classList.add("hidden"); list.innerHTML = ""; return; }
-      bar.classList.remove("hidden");
-      const msgs = await Promise.all(pins.map(id => getDoc(doc(db, "threads", threadId, "messages", id))));
-      list.innerHTML = msgs.map(s => <div class="bg-slate-800 p-2 rounded border border-slate-700 text-[10px]">${renderMarkdown(s.data().text)}</div>).join('');
-    }
-
-    // Uploads
-    window.handleFileUpload = async (files) => {
-      if (!activeThreadId) return alert("Open a thread first.");
-      for (const file of files) {
-        const path = threads/${activeThreadId}/attachments/${Date.now()}_${file.name};
-        const up = await uploadWithProgress(file, path);
-        await sendMessage({ threadId: activeThreadId, text: 📎 ${file.name}, attachments: [up] });
-      }
-    };
-    function uploadWithProgress(file, path) {
-      return new Promise((resolve, reject) => {
-        const fileRef = ref(storage, path);
-        const task = uploadBytesResumable(fileRef, file);
-        task.on("state_changed", null, reject, async () => {
-          const url = await getDownloadURL(task.snapshot.ref);
-          resolve({ url, name: file.name, mime: file.type });
-        });
-      });
-    }
-
-    // Search
-    window.runSearch = async () => {
-      const q = document.getElementById("search-input").value.trim().toLowerCase();
-      if (!q || !activeThreadId) return;
-      const res = await getDocs(collection(db, "threads", activeThreadId, "messages"));
-      const hits = [];
-      res.forEach(d => {
-        const data = d.data();
-        if ((data.text || "").toLowerCase().includes(q)) hits.push({ id: d.id, text: data.text });
-      });
-      alert(Found ${hits.length} message(s));
-    };
-
-    // AI tab: suggestions + assistant stub
-    window.aiSuggest = async (type) => {
-      const suggestions = {
-        summarize: "Summarize last 20 messages with key points and action items.",
-        reply: "Draft a concise reply acknowledging points and proposing next steps.",
-        analyze: "Analyze last uploaded file and extract highlights.",
-        tasks: "List actionable tasks from recent messages."
-      };
-      document.getElementById("ai-input").value = suggestions[type] || "Help me with this thread.";
-    };
-
-    document.getElementById("ai-form").onsubmit = async (e) => {
-      e.preventDefault();
-      const input = document.getElementById("ai-input");
-      const prompt = input.value.trim();
-      if (!prompt) return;
-      logAi(You: ${prompt});
-      const reply = Assistant: Based on your prompt, I'll ${prompt.toLowerCase()}. (Stubbed response);
-      logAi(reply);
-      input.value = "";
-      if (activeThreadId) {
-        await addDoc(collection(db, "threads", activeThreadId, "messages"), {
-          text: reply, senderUid: "assistant", createdAt: Date.now(), aiMeta: { prompt }
-        });
-      }
-    };
-    function logAi(text) {
-      const log = document.getElementById("ai-log");
-      const el = document.createElement("div");
-      el.className = "text-[11px] text-slate-300";
-      el.textContent = text;
-      log.appendChild(el);
-    }
-
-    // Emoji picker (simple)
-    window.openEmojiPicker = (inputId) => {
-      const emojis = ["🙂","😀","😉","😍","🔥","👍","👏","🙌","💡","📝"];
-      const choice = prompt("Pick an emoji:\n" + emojis.join(" "));
-      if (!choice) return;
-      const input = document.getElementById(inputId);
-      input.value += " " + choice;
-      input.focus();
-    };
-
-    // Notes
-    window.saveNote = async () => {
-      const title = document.getElementById("note-title").value.trim();
-      const contentHtml = document.getElementById("note-content").innerHTML;
-      if (!title && !contentHtml) return;
-      await addDoc(collection(db, "notes", currentUser.uid, "items"), {
-        title, contentHtml, createdAt: Date.now(), updatedAt: Date.now(), pinned: false
-      });
-      document.getElementById("note-title").value = "";
-      document.getElementById("note-content").innerHTML = "Saved.";
-    };
-
-    function loadNotes() {
-      onSnapshot(collection(db, "notes", currentUser.uid, "items"), (snap) => {
-        const list = document.getElementById("notes-list");
-        list.innerHTML = snap.docs.map(d => {
-          const n = d.data();
-          return `<div class="bg-slate-800/40 p-3 rounded-xl border border-slate-700/50">
-            <p class="text-[11px] font-bold text-slate-200">${escapeHtml(n.title || '(untitled)')}</p>
-            <div class="text-[10px] text-slate-300">${n.contentHtml || ''}</div>
-          </div>`;
-        }).join('');
-      });
-    }
-
-    // Export notes
-    window.exportNote = (format) => {
-      const title = document.getElementById("note-title").value.trim() || "note";
-      const html = document.getElementById("note-content").innerHTML;
-      const md = htmlToMarkdown(html);
-      if (format === 'md') {
-        downloadFile(${slugify(title)}.md, md);
-      } else {
-        // PDF export client-side (basic): generate HTML and trigger print dialog
-        const w = window.open("", "_blank");
-        w.document.write(<html><head><title>${title}</title></head><body>${html}</body></html>);
-        w.document.close();
-        w.focus();
-        w.print();
-      }
-    };
-
-    function htmlToMarkdown(html) {
-      // Extremely basic conversion
-      return html
-        .replace(/<strong>/g, '').replace(/<\/strong>/g, '')
-        .replace(/<em>/g, '').replace(/<\/em>/g, '')
-        .replace(/<br\s*\/?>/g, '\n')
-        .replace(/<[^>]+>/g, '');
-    }
-    function downloadFile(name, content) {
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = name; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-    function slugify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
-
-    // Accounts
-    window.processAuth = async () => {
-      try {
-        await signInWithEmailAndPassword(auth, document.getElementById("identity-email").value, document.getElementById("identity-pass").value);
-        window.switchTab('chats');
-      } catch (e) { alert(e.message); }
-    };
-    window.processSignUp = async () => {
-      try {
-        const email = document.getElementById("identity-email").value;
-        const pass = document.getElementById("identity-pass").value;
-        const res = await createUserWithEmailAndPassword(auth, email, pass);
-        await sendEmailVerification(res.user);
-        await updateProfile(res.user, { displayName: email.split("@")[0] });
-        await ensureProfile(res.user);
-        alert("Account created. Verify your email.");
-        window.switchTab('chats');
-      } catch (e) { alert(e.message); }
-    };
-    window.processLogout = () => signOut(auth).then(() => location.reload());
-
-    // Helpers
-    function escapeHtml(s) {
-      if (!s) return "";
-      return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-    function escapeAttr(s) { return String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-
-    // Create thread
-    window.createThread = async () => {
-      const title = document.getElementById("new-thread-title").value.trim() || "New thread";
-      const type = document.getElementById("new-thread-type").value;
-      const members = type === 'ai' ? [] : [currentUser.uid];
-      const tRef = await addDoc(collection(db, "threads"), { title, type, members, createdAt: Date.now(), pins: [] });
-      activeThreadId = tRef.id;
-      window.switchTab('chats');
-      openThread(tRef.id);
-    };
-
-  </script>
+function syncChat() {
+  onSnapshot(query(collection(db, "global_chat"), orderBy("timestamp", "asc")), (snap) => {
+    const cont = document.getElementById("chat-container");
+    cont.innerHTML = snap.docs.map(doc => {
+      const d = doc.data();
+      const isMe = d.uid === currentUser.uid;
+      return `<div class="flex ${isMe ? 'justify-end' : 'justify-start'}"><div class="max-w-[85%] p-4 rounded-3xl text-[11px] ${isMe ? 'wvu-blue border border-[#eaaa00]/30' : 'bg-slate-900 border border-slate-800'}">${d.text}</div></div>`;
+    }).join('');
+  });
+}
+</script>
 </body>
 </html>
-
