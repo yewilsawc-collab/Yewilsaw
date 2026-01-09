@@ -1,103 +1,116 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Messaging Pro | Global Network</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: { extend: { colors: { darkBg: '#0f172a', lightBg: '#f8fafc' } } }
-    }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus P2P | PhD Research Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --p2p-blue: #3b82f6; --p2p-dark: #09090b; }
+        body { background: var(--p2p-dark); color: #f4f4f5; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+        .ai-glow { box-shadow: 0 0 20px rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); }
+        .msg-bubble { border-radius: 20px 20px 4px 20px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+    </style>
 </head>
-<body class="bg-lightBg dark:bg-darkBg text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-300">
+<body class="h-screen flex flex-col overflow-hidden">
 
-  <header class="sticky top-0 z-50 bg-white/80 dark:bg-darkBg/90 backdrop-blur-md p-4 border-b border-slate-200 dark:border-slate-800">
-    <div class="max-w-xl mx-auto flex flex-col gap-3">
-        <div class="flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white font-black">P</div>
-                <h1 class="text-xs font-black tracking-widest uppercase text-pink-500">Messaging Pro</h1>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="window.toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">🌓 Theme</button>
-                <button id="logout-btn" onclick="window.processLogout()" class="text-[9px] font-black uppercase px-3 py-1 bg-red-500/10 text-red-500 rounded">Exit</button>
-            </div>
+    <nav class="p-4 glass flex justify-between items-center z-30">
+        <div class="flex items-center gap-2">
+            <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+            <h1 class="font-bold tracking-tight text-lg">NEXUS<span class="text-blue-500 italic">P2P</span></h1>
         </div>
-        
-        <div class="relative">
-            <input id="user-search" type="text" placeholder="Search researchers or topics..." 
-                   class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl py-2 px-4 text-xs focus:ring-2 focus:ring-pink-500 outline-none" />
-            <div id="search-results" class="absolute top-12 left-0 right-0 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 hidden z-[60]"></div>
+        <div class="flex items-center gap-3">
+            <span id="p2p-status" class="text-[10px] text-gray-500 font-mono">IDLE</span>
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-blue-600 flex items-center justify-center text-[10px] font-bold">YC</div>
         </div>
-    </div>
-  </header>
+    </nav>
 
-  <div id="notification-toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] transform transition-all duration-500 translate-y-[-150px] opacity-0">
-    <div class="bg-pink-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
-      <span>🔔</span>
-      <p id="toast-message" class="text-[10px] font-black uppercase"></p>
-    </div>
-  </div>
+    <main id="feed" class="flex-grow overflow-y-auto p-4 space-y-4 flex flex-col pt-6 scroll-smooth">
+        <div class="text-center text-[10px] text-gray-600 uppercase tracking-widest py-4">Tunnel Secured with 256-bit AES</div>
+    </main>
 
-  <nav class="sticky top-[115px] z-40 bg-white dark:bg-darkBg border-b border-slate-200 dark:border-slate-800 flex max-w-xl mx-auto w-full">
-    <button onclick="window.switchTab('feed')" id="tab-feed" class="flex-1 py-3 text-[10px] font-black uppercase border-b-2 border-pink-500 text-pink-500">Global</button>
-    <button onclick="window.switchTab('messages')" id="tab-messages" class="flex-1 py-3 text-[10px] font-black uppercase border-b-2 border-transparent text-slate-400">DMs</button>
-    <button onclick="window.switchTab('account')" id="tab-account" class="flex-1 py-3 text-[10px] font-black uppercase border-b-2 border-transparent text-slate-400">Account</button>
-  </nav>
-
-  <main class="flex-1 p-4 pb-32 max-w-xl mx-auto w-full">
-    <div id="feed-view" class="space-y-4">
-        <div id="post-list" class="space-y-4"></div>
-    </div>
-    
-    <div id="messages-view" class="hidden">
-        <div id="chat-list" class="space-y-2">
-            <p class="text-center text-slate-500 text-[10px] uppercase font-bold mt-10">No active messages</p>
+    <div id="ai-panel" class="hidden mx-4 p-4 glass ai-glow rounded-2xl mb-2 animate-bounce-in">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[10px] font-bold text-purple-400 uppercase">Gemini Research Insight</span>
+            <button onclick="document.getElementById('ai-panel').classList.add('hidden')" class="text-gray-500">×</button>
         </div>
+        <p id="ai-content" class="text-sm text-gray-200 leading-relaxed italic">Analyzing kinetics data...</p>
     </div>
 
-    <div id="account-view" class="hidden">
-        <div class="bg-slate-100 dark:bg-slate-800/40 p-10 rounded-3xl border border-slate-200 dark:border-slate-700 text-center">
-            <div class="w-20 h-20 bg-pink-500 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold">Y</div>
-            <h2 class="font-bold">Yewilsaw Chanie</h2>
-            <p class="text-[10px] text-slate-500 uppercase font-bold mb-6">Physical Chemistry Applicant</p>
-            <button onclick="window.processLogout()" class="text-red-500 text-[10px] font-black uppercase">Logout</button>
+    <footer class="p-4 glass rounded-t-[40px] border-t border-white/5 pb-10">
+        <div class="flex items-center gap-3">
+            <button id="ai-trigger" class="p-4 bg-purple-900/20 text-purple-400 rounded-2xl hover:bg-purple-900/40 transition active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </button>
+            <input id="main-input" type="text" placeholder="Message or Research Topic..." class="flex-grow bg-transparent border-none focus:ring-0 text-sm py-4">
+            <button id="send-trigger" class="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+            </button>
         </div>
-    </div>
-  </main>
+    </footer>
 
-  <footer class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white dark:from-darkBg to-transparent">
-    <div id="upload-preview" class="max-w-md mx-auto mb-2 hidden">
-        <img id="img-preview" src="" class="h-20 rounded-xl border-2 border-pink-500" />
-    </div>
-    <form id="post-form" class="max-w-md mx-auto flex items-center gap-2">
-      <input type="file" id="media-input" accept="image/*" class="hidden" />
-      <button type="button" onclick="document.getElementById('media-input').click()" class="bg-slate-100 dark:bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center border border-slate-200 dark:border-slate-700">📸</button>
-      <input id="post-input" type="text" placeholder="Post an update..." class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full py-4 px-6 text-sm outline-none focus:ring-2 focus:ring-pink-500" />
-      <button type="submit" class="bg-pink-600 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg">▲</button>
-    </form>
-  </footer>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { GoogleGenAI } from "https://esm.run/@google/genai";
 
-  <script type="module">
-    // Logic for Theme, Tabs, Search, and Firebase interaction
-    window.toggleTheme = () => {
-        document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-    };
+        // CONFIGURATION INTEGRATED
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
+            authDomain: "university-outreach-log.firebaseapp.com",
+            projectId: "university-outreach-log",
+            storageBucket: "university-outreach-log.firebasestorage.app",
+            messagingSenderId: "566149647802",
+            appId: "1:566149647802:web:490c7cc3d10b7cd7732183"
+        };
 
-    window.switchTab = (tab) => {
-        ['feed', 'messages', 'account'].forEach(t => {
-            document.getElementById(`${t}-view`).classList.toggle('hidden', t !== tab);
-            document.getElementById(`tab-${t}`).classList.toggle('border-pink-500', t === tab);
-            document.getElementById(`tab-${t}`).classList.toggle('text-pink-500', t === tab);
+        const genAI = new GoogleGenAI("AIzaSyDRHoimQpL6x1475X-KdA2cUmB7svg5-Gg");
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const feed = document.getElementById('feed');
+        const mainInput = document.getElementById('main-input');
+
+        // 1. Messaging Engine
+        const broadcast = async () => {
+            const text = mainInput.value.trim();
+            if(!text) return;
+            mainInput.value = '';
+            await addDoc(collection(db, "research_chat"), { text, timestamp: serverTimestamp(), type: 'p2p' });
+        };
+
+        onSnapshot(query(collection(db, "research_chat"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
+            feed.innerHTML = '';
+            document.getElementById('p2p-status').innerText = "PEER LINK ACTIVE";
+            snap.docs.reverse().forEach(doc => {
+                const data = doc.data();
+                const div = document.createElement('div');
+                div.className = "self-end max-w-[85%] p-4 msg-bubble text-sm shadow-lg animate-fadeIn mb-2";
+                div.innerText = data.text;
+                feed.appendChild(div);
+            });
+            feed.scrollTop = feed.scrollHeight;
         });
-    };
 
-    // Firebase initialization using your config from index (16).html
-    // would follow here...
-  </script>
+        // 2. Gemini AI Research Assistant
+        document.getElementById('ai-trigger').onclick = async () => {
+            const panel = document.getElementById('ai-panel');
+            const content = document.getElementById('ai-content');
+            panel.classList.remove('hidden');
+            content.innerText = "Gemini is reviewing your recent discussion...";
+
+            try {
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const prompt = `As a Physical Chemistry expert helping a PhD student (Yewilsaw Chanie), analyze this research message for potential kinetic models or characterization methods: "${mainInput.value}"`;
+                const result = await model.generateContent(prompt);
+                content.innerText = result.response.text();
+            } catch (e) {
+                content.innerText = "Research assistant offline. Check API quota.";
+            }
+        };
+
+        document.getElementById('send-trigger').onclick = broadcast;
+        mainInput.onkeydown = (e) => e.key === 'Enter' && broadcast();
+    </script>
 </body>
-        </html>
+</html>
