@@ -2,115 +2,88 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nexus P2P | PhD Research Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=0">
+    <title>ELEMENTA | Node Registration</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="style.css">
+
     <style>
-        :root { --p2p-blue: #3b82f6; --p2p-dark: #09090b; }
-        body { background: var(--p2p-dark); color: #f4f4f5; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
-        .ai-glow { box-shadow: 0 0 20px rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); }
-        .msg-bubble { border-radius: 20px 20px 4px 20px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+        /* Smooth transitions for the lifecycle states */
+        #auth-container { transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .success-glow { box-shadow: 0 0 50px rgba(241, 196, 15, 0.4); border-color: #f1c40f; }
+        .hidden-state { display: none !important; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="bg-[#020617] text-white flex items-center justify-center min-h-screen p-6 overflow-hidden">
 
-    <nav class="p-4 glass flex justify-between items-center z-30">
-        <div class="flex items-center gap-2">
-            <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-            <h1 class="font-bold tracking-tight text-lg">NEXUS<span class="text-blue-500 italic">P2P</span></h1>
+    <div id="auth-container" class="elementa-glass p-10 rounded-[50px] max-w-sm w-full text-center relative z-10">
+        
+        <div class="w-16 h-16 bg-[#f1c40f] rounded-2xl mx-auto flex items-center justify-center shadow-[0_0_30_rgba(241,196,15,0.3)] mb-6">
+            <span class="text-black font-black text-2xl">Λ</span>
         </div>
-        <div class="flex items-center gap-3">
-            <span id="p2p-status" class="text-[10px] text-gray-500 font-mono">IDLE</span>
-            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-blue-600 flex items-center justify-center text-[10px] font-bold">YC</div>
-        </div>
-    </nav>
 
-    <main id="feed" class="flex-grow overflow-y-auto p-4 space-y-4 flex flex-col pt-6 scroll-smooth">
-        <div class="text-center text-[10px] text-gray-600 uppercase tracking-widest py-4">Tunnel Secured with 256-bit AES</div>
-    </main>
+        <div id="prompt-view">
+            <h2 class="text-[#f1c40f] text-[10px] font-black tracking-[0.5em] uppercase mb-2">New Node detected</h2>
+            <p class="text-xs text-slate-500 mb-8 font-mono">LOCATION: ADDIS ABABA GRID</p>
 
-    <div id="ai-panel" class="hidden mx-4 p-4 glass ai-glow rounded-2xl mb-2 animate-bounce-in">
-        <div class="flex justify-between items-start mb-2">
-            <span class="text-[10px] font-bold text-purple-400 uppercase">Gemini Research Insight</span>
-            <button onclick="document.getElementById('ai-panel').classList.add('hidden')" class="text-gray-500">×</button>
+            <button id="signup-btn" class="w-full bg-[#f1c40f] text-black py-4 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg">
+                Register Node
+            </button>
+            
+            <p class="mt-6 text-[8px] text-slate-600 uppercase tracking-widest">Uses Android Platform Authenticator</p>
         </div>
-        <p id="ai-content" class="text-sm text-gray-200 leading-relaxed italic">Analyzing kinetics data...</p>
+
+        <div id="success-view" class="hidden-state animate-pulse">
+            <h2 class="text-green-500 text-[10px] font-black tracking-[0.5em] uppercase mb-2">Registration Complete</h2>
+            <p class="text-xs text-slate-300 font-mono">NODE IDENTITY: YEWILSAW CHANIE</p>
+            <div class="mt-8 flex justify-center">
+                <div class="w-2 h-2 bg-[#f1c40f] rounded-full mx-1"></div>
+                <div class="w-2 h-2 bg-[#f1c40f] rounded-full mx-1"></div>
+                <div class="w-2 h-2 bg-[#f1c40f] rounded-full mx-1"></div>
+            </div>
+        </div>
     </div>
 
-    <footer class="p-4 glass rounded-t-[40px] border-t border-white/5 pb-10">
-        <div class="flex items-center gap-3">
-            <button id="ai-trigger" class="p-4 bg-purple-900/20 text-purple-400 rounded-2xl hover:bg-purple-900/40 transition active:scale-90">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-            </button>
-            <input id="main-input" type="text" placeholder="Message or Research Topic..." class="flex-grow bg-transparent border-none focus:ring-0 text-sm py-4">
-            <button id="send-trigger" class="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-            </button>
-        </div>
-    </footer>
+    <div class="fixed inset-0 pointer-events-none opacity-20">
+        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#f1c40f] rounded-full blur-[150px]"></div>
+    </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { GoogleGenAI } from "https://esm.run/@google/genai";
+        // Import the biometric logic from your file
+        import { authenticateNode } from './security.js';
 
-        // CONFIGURATION INTEGRATED
-        const firebaseConfig = {
-            apiKey: "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
-            authDomain: "university-outreach-log.firebaseapp.com",
-            projectId: "university-outreach-log",
-            storageBucket: "university-outreach-log.firebasestorage.app",
-            messagingSenderId: "566149647802",
-            appId: "1:566149647802:web:490c7cc3d10b7cd7732183"
-        };
+        const signupBtn = document.getElementById('signup-btn');
+        const promptView = document.getElementById('prompt-view');
+        const successView = document.getElementById('success-view');
+        const container = document.getElementById('auth-container');
 
-        const genAI = new GoogleGenAI("AIzaSyDRHoimQpL6x1475X-KdA2cUmB7svg5-Gg");
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const feed = document.getElementById('feed');
-        const mainInput = document.getElementById('main-input');
+        signupBtn.addEventListener('click', async () => {
+            console.log("Initializing Biometric Registration...");
+            
+            // This triggers the Android system prompt
+            const success = await authenticateNode();
 
-        // 1. Messaging Engine
-        const broadcast = async () => {
-            const text = mainInput.value.trim();
-            if(!text) return;
-            mainInput.value = '';
-            await addDoc(collection(db, "research_chat"), { text, timestamp: serverTimestamp(), type: 'p2p' });
-        };
+            if (success) {
+                // Physical Haptic Confirmation for Android
+                if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
 
-        onSnapshot(query(collection(db, "research_chat"), orderBy("timestamp", "desc"), limit(30)), (snap) => {
-            feed.innerHTML = '';
-            document.getElementById('p2p-status').innerText = "PEER LINK ACTIVE";
-            snap.docs.reverse().forEach(doc => {
-                const data = doc.data();
-                const div = document.createElement('div');
-                div.className = "self-end max-w-[85%] p-4 msg-bubble text-sm shadow-lg animate-fadeIn mb-2";
-                div.innerText = data.text;
-                feed.appendChild(div);
-            });
-            feed.scrollTop = feed.scrollHeight;
-        });
-
-        // 2. Gemini AI Research Assistant
-        document.getElementById('ai-trigger').onclick = async () => {
-            const panel = document.getElementById('ai-panel');
-            const content = document.getElementById('ai-content');
-            panel.classList.remove('hidden');
-            content.innerText = "Gemini is reviewing your recent discussion...";
-
-            try {
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                const prompt = `As a Physical Chemistry expert helping a PhD student (Yewilsaw Chanie), analyze this research message for potential kinetic models or characterization methods: "${mainInput.value}"`;
-                const result = await model.generateContent(prompt);
-                content.innerText = result.response.text();
-            } catch (e) {
-                content.innerText = "Research assistant offline. Check API quota.";
+                // Transition UI
+                promptView.classList.add('hidden-state');
+                successView.classList.remove('hidden-state');
+                container.classList.add('success-glow');
+                
+                console.log("Node Registered on Android Grid.");
+                
+                // Redirect or unlock further logic after 2 seconds
+                setTimeout(() => {
+                    // window.location.href = 'feed.html'; // Example redirect
+                }, 2000);
+            } else {
+                alert("Registration Failed. Ensure you are on HTTPS and have a screen lock set.");
             }
-        };
-
-        document.getElementById('send-trigger').onclick = broadcast;
-        mainInput.onkeydown = (e) => e.key === 'Enter' && broadcast();
+        });
     </script>
 </body>
 </html>
