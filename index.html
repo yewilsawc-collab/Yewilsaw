@@ -1,525 +1,332 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Elementa | Universal Social Hub</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root {
-      --primary: #007bff;
-      --primary-dark: #0056b3;
-      --bg: #f4f7fa;
-      --white: #ffffff;
-      --shadow: 0 4px 12px rgba(0,0,0,0.08);
-      --text: #333;
-    }
-    body { margin:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); }
-    header { background: var(--primary); color: white; padding: 20px; text-align: center; box-shadow: var(--shadow); }
-    
-    /* Navigation */
-    nav { display: flex; justify-content: center; background: var(--primary-dark); sticky; top: 0; z-index: 100; overflow-x: auto; }
-    nav button { flex: 1; padding: 14px; border: none; background: transparent; color: white; font-size: 15px; cursor: pointer; transition: 0.3s; min-width: 100px; }
-    nav button:hover { background: rgba(255,255,255,0.1); }
-    nav button.active { background: #003d80; font-weight: bold; border-bottom: 3px solid white; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Elementa Assist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
 
-    /* Layout Containers */
-    main { max-width: 1100px; margin: 20px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr; gap: 20px; }
-    @media (min-width: 850px) { main.dashboard-grid { grid-template-columns: 3fr 1fr; } }
-    
-    section { display: none; background: var(--white); border-radius: 12px; padding: 25px; box-shadow: var(--shadow); animation: fadeIn 0.4s; }
-    section.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .code-font { font-family: 'Fira Code', monospace; }
 
-    /* Components */
-    .post { border-bottom: 1px solid #eee; padding: 15px 0; }
-    .post h3 { margin: 0; color: var(--primary); font-size: 16px; }
-    .actions { display: flex; gap: 15px; margin-top: 10px; }
-    .actions button { background: none; border: 1px solid #ddd; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-    
-    .sidebar-card { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-    .sidebar-card h3 { margin-top: 0; font-size: 18px; border-bottom: 2px solid var(--primary); display: inline-block; }
-    ul { list-style: none; padding: 0; }
-    li { padding: 8px 0; border-bottom: 1px solid #e0e0e0; cursor: pointer; font-size: 14px; }
-    li:hover { color: var(--primary); }
+        .glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
 
-    input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-    button.main-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    
-    #video-container { position: relative; background: #000; border-radius: 8px; overflow: hidden; margin-top: 15px; }
-    video { width: 100%; display: block; }
-    .status-msg { font-size: 14px; margin: 10px 0; color: #666; }
-  </style>
+        .drawer-transition {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #canvasPreview, .inline-preview-iframe {
+            background: white;
+            border-radius: 12px;
+        }
+
+        /* Full Screen Preview Mode */
+        .fullscreen-preview #canvasArea { flex-direction: column; }
+        .fullscreen-preview #canvasEditorContainer { display: none; }
+        .fullscreen-preview #canvasPreviewContainer { 
+            position: fixed; 
+            inset: 0; 
+            z-index: 100; 
+            padding: 0; 
+            background: white;
+        }
+        .fullscreen-preview #canvasPreview { border-radius: 0; }
+        .fullscreen-preview header, .fullscreen-preview #inputContainer { display: none; }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 1024px) {
+            .canvas-split { flex-direction: column; }
+            #canvasEditorContainer { height: 40%; }
+            #canvasPreviewContainer { height: 60%; }
+        }
+
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+        
+        .chat-bubble-ai {
+            max-width: 95%;
+            border-radius: 20px 20px 20px 4px;
+        }
+    </style>
 </head>
-<head>
-<style>
-  :root {
-    --bg: #0f0f0f;
-    --glass: rgba(255, 255, 255, 0.05);
-    --accent: #00d2ff;
-    --text: #e0e0e0;
-}
-
-body {
-    margin: 0;
-    font-family: 'Inter', system-ui, sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
-    overflow: hidden;
-}
-
-.app-container {
-    display: grid;
-    grid-template-columns: 240px 1fr 300px; /* Three-Pane Layout */
-    height: 100-vh;
-}
-
-/* Glassmorphism Effect */
-.sidebar, .right-panel, .top-bar {
-    background: var(--glass);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.sidebar {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-}
-
-.nav-links {
-    list-style: none;
-    padding: 0;
-    margin-top: 2rem;
-}
-
-.nav-links li {
-    padding: 12px;
-    margin-bottom: 8px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.nav-links li.active, .nav-links li:hover {
-    background: var(--accent);
-    color: #000;
-}
-
-.main-content {
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid rgba(255,255,255,0.1);
-}
-
-.top-bar {
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.connection-status {
-    color: var(--accent);
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.content-area {
-    padding: 2rem;
-    overflow-y: auto;
-}
-
-.post-card {
-    background: var(--glass);
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-}
-
-.status-dot {
-    height: 8px;
-    width: 8px;
-    background: var(--accent);
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 10px;
-}
-
-</style></head>
-<body>
-
-  <header>
-    <h1>Elementa</h1>
-    <p>Universal Hub: Feed, Messages, Calls & Streams</p>
-  </header>
-
-  <div id="auth-gate">
-    <section id="guest" class="active" style="max-width: 400px; margin: 40px auto; display: block;">
-      <h2>Join the Community</h2>
-      <form id="signupForm">
-        <input type="email" id="email" placeholder="Email Address" required>
-        <input type="password" id="password" placeholder="Create Password" required>
-        <button type="submit" class="main-btn">Sign Up / Login</button>
-      </form>
-      <p id="signupStatus" class="status-msg"></p>
-    </section>
-
-    <div id="dashboard" style="display:none;">
-      <nav>
-        <button data-tab="home" class="active">Home</button>
-        <button data-tab="feed">Feed</button>
-        <button data-tab="messages">Messages</button>
-        <button data-tab="streams">Streams</button>
-        <button data-tab="uploads">Uploads</button>
-      </nav>
-
-      <main class="dashboard-grid">
-        <div id="tab-content">
-          <section id="home" class="active">
-            <h2>Welcome, <span id="display-email"></span></h2>
-            <p>You are connected to the Elementa P2P Node.</p>
-            <button id="logoutBtn" style="background:#dc3545; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Sign Out</button>
-          </section>
-
-          <section id="feed">
-            <h2>Community Feed</h2>
-            <input type="text" id="postInput" placeholder="What's happening?">
-            <button id="submitPost" class="main-btn" style="width: auto; margin-bottom: 20px;">Post</button>
-            <div id="feedPosts"></div>
-          </section>
-
-          <section id="messages">
-            <h2>Direct Messages</h2>
-            <div id="messageList" style="height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px;"></div>
-            <div style="display: flex; gap: 10px;">
-              <input type="text" id="msgInput" placeholder="Type a message...">
-              <button id="sendMsgBtn" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px;">Send</button>
+<body class="bg-[#f5f7fa] text-slate-900 transition-colors duration-500">
+    
+    <div class="h-[100dvh] flex relative z-10 overflow-hidden">
+        
+        <!-- LEFT SIDEBAR -->
+        <aside id="leftSidebar" class="fixed inset-y-0 left-0 w-[85vw] max-w-sm glass border-r z-50 transform -translate-x-full lg:relative lg:translate-x-0 lg:w-80 drawer-transition flex flex-col">
+            <div class="p-6 space-y-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 text-blue-600 font-extrabold text-xl">
+                        <div class="p-2 bg-blue-600 rounded-xl text-white shadow-lg"><i data-lucide="layout" class="w-5 h-5"></i></div>
+                        <span>Elementa OS</span>
+                    </div>
+                    <button class="lg:hidden p-2" onclick="toggleLeft(false)"><i data-lucide="x"></i></button>
+                </div>
+                
+                <nav class="space-y-1">
+                    <button onclick="setView('chat')" id="navChat" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all bg-blue-50 text-blue-600">
+                        <i data-lucide="message-square" class="w-5 h-5"></i> Chat Logs
+                    </button>
+                    <button onclick="setView('canvas')" id="navCanvas" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all text-slate-500 hover:bg-slate-100">
+                        <i data-lucide="pen-tool" class="w-5 h-5"></i> Code Canvas
+                    </button>
+                </nav>
             </div>
-          </section>
 
-          <section id="streams">
-            <h2>Live Broadcast</h2>
-            <button id="goLiveBtn" class="main-btn">Start Streaming</button>
-            <div id="video-container">
-              <video id="localStream" autoplay playsinline muted></video>
-            </div>
-          </section>
-
-          <section id="uploads">
-            <h2>Cloud Storage</h2>
-            <input type="file" id="fileInput">
-            <button id="uploadBtn" class="main-btn">Upload to Firebase</button>
-            <div id="uploadStatus" class="status-msg"></div>
-            <div id="uploadList"></div>
-          </section>
-        </div>
-
-        <aside id="sidebar">
-          <div class="sidebar-card">
-            <h3>Trending Topics</h3>
-            <ul id="trendingTopics">
-              <li>#javascript</li>
-              <li>#web3</li>
-              <li>#elementa</li>
-            </ul>
-          </div>
-          <div class="sidebar-card">
-            <h3>Active Streams</h3>
-            <ul id="activeStreams">
-              <li style="color: #666; font-style: italic;">No streams live...</li>
-            </ul>
-          </div>
+            <div id="logContainer" class="flex-1 overflow-y-auto px-4 pb-4 space-y-1"></div>
         </aside>
-      </main>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 flex flex-col relative h-full overflow-hidden">
+            <header class="h-16 lg:h-20 glass flex items-center justify-between px-4 lg:px-8 z-30">
+                <div class="flex items-center gap-3">
+                    <button class="lg:hidden p-2 text-slate-500" onclick="toggleLeft(true)"><i data-lucide="menu"></i></button>
+                    <h1 id="viewTitle" class="font-bold text-base lg:text-lg">Elementa Assist</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleRight(true)" class="p-2.5 rounded-xl bg-slate-100 text-slate-600"><i data-lucide="settings" class="w-5 h-5"></i></button>
+                </div>
+            </header>
+
+            <!-- CHAT VIEW -->
+            <div id="chatArea" class="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 pb-32">
+                <div id="welcomeScreen" class="max-w-xl mx-auto text-center py-12">
+                    <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl mb-6 text-white"><i data-lucide="sparkles" class="w-10 h-10"></i></div>
+                    <h2 class="text-3xl font-black mb-2">Hello</h2>
+                    <p class="text-slate-500 mb-8">How May I Help You</p>
+                </div>
+                <div id="messagesList" class="max-w-3xl mx-auto space-y-6 hidden"></div>
+            </div>
+
+            <!-- CANVAS VIEW -->
+            <div id="canvasArea" class="flex-1 hidden flex-col lg:flex-row overflow-hidden canvas-split">
+                <div id="canvasEditorContainer" class="flex-1 flex flex-col border-r border-slate-200 bg-slate-900">
+                    <div class="h-10 bg-slate-800 flex items-center justify-between px-4 text-slate-400">
+                        <span class="text-[10px] font-bold tracking-widest uppercase">Editor</span>
+                        <button onclick="updatePreview()" class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded">RUN</button>
+                    </div>
+                    <textarea id="codeEditor" class="flex-1 w-full p-4 bg-transparent text-blue-300 code-font text-sm outline-none resize-none" spellcheck="false" oninput="updatePreview()"></textarea>
+                </div>
+                <div id="canvasPreviewContainer" class="flex-1 flex flex-col bg-slate-100 p-2 lg:p-4 transition-all duration-300">
+                    <div class="h-10 flex items-center px-4 justify-between bg-white/50 rounded-t-xl border-b border-slate-200">
+                        <div class="flex items-center gap-2">
+                             <button id="exitFullscreenBtn" onclick="toggleFullscreenPreview(false)" class="hidden text-slate-600 hover:text-blue-600 mr-2"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                             <span class="text-[10px] font-bold text-slate-400 uppercase">Live Preview</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="toggleFullscreenPreview(true)" id="fullscreenBtn" class="text-slate-400 hover:text-blue-500" title="Full Screen"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+                            <button onclick="popOutPreview()" class="text-slate-400 hover:text-blue-500"><i data-lucide="external-link" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <iframe id="canvasPreview" class="flex-1 w-full bg-white rounded-b-xl border-none"></iframe>
+                </div>
+            </div>
+
+            <!-- SHARED INPUT BAR -->
+            <div id="inputContainer" class="fixed bottom-0 left-0 right-0 p-3 lg:p-6 lg:static z-40 bg-gradient-to-t from-[#f5f7fa] to-transparent">
+                <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1.5 safe-pb flex items-end gap-2 px-2 py-1">
+                    <textarea id="chatInput" placeholder="Message AI or code..." rows="1" class="flex-1 bg-transparent py-3 px-2 outline-none resize-none font-medium text-slate-700 max-h-32 min-h-[44px]"></textarea>
+                    <button id="actionBtn" onclick="handleAction()" class="p-3.5 bg-blue-600 text-white rounded-xl shadow-lg"><i data-lucide="send" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside id="rightSidebar" class="fixed inset-y-0 right-0 w-[85vw] max-w-sm glass border-l z-50 transform translate-x-full drawer-transition flex flex-col">
+            <div class="p-6 border-b border-black/5 flex items-center justify-between">
+                <h3 class="font-black">Settings</h3>
+                <button onclick="toggleRight(false)"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">API Key</label>
+                    <input type="password" id="geminiKey" class="w-full p-3 bg-slate-100 rounded-xl text-sm outline-none" placeholder="Paste key...">
+                    <button onclick="saveApiKey()" class="w-full mt-2 bg-blue-600 text-white p-3 rounded-xl text-xs font-bold">SAVE KEY</button>
+                </div>
+            </div>
+        </aside>
+
+        <div id="overlay" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden" onclick="closeAll()"></div>
     </div>
-  </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // PROJECT CONFIG (Using your provided details)
-    const firebaseConfig = {
-      apiKey: "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
-      authDomain: "university-outreach-log.firebaseapp.com",
-      projectId: "university-outreach-log",
-      storageBucket: "university-outreach-log.firebasestorage.app",
-      messagingSenderId: "566149647802",
-      appId: "1:566149647802:web:490c7cc3d10b7cd7732183"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
+            authDomain: "university-outreach-log.firebaseapp.com",
+            projectId: "university-outreach-log",
+            storageBucket: "university-outreach-log.firebasestorage.app",
+            messagingSenderId: "566149647802",
+            appId: "1:566149647802:web:490c7cc3d10b7cd7732183"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "ai-outreach-workspace";
 
-    // --- AUTH LOGIC ---
-    document.getElementById("signupForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        try {
-          await signInWithEmailAndPassword(auth, email, password);
-        } catch (loginErr) {
-          document.getElementById("signupStatus").textContent = `Error: ${loginErr.message}`;
+        let geminiKey = localStorage.getItem('GEMINI_API_KEY') || "";
+
+        window.onload = () => {
+            lucide.createIcons();
+            document.getElementById('geminiKey').value = geminiKey;
+            signInAnonymously(auth).catch(console.error);
+            onAuthStateChanged(auth, user => { if(user) setupListeners(); });
+            
+            const tx = document.getElementById('chatInput');
+            tx.addEventListener("input", function() {
+                this.style.height = "auto";
+                this.style.height = (this.scrollHeight) + "px";
+            });
+        };
+
+        window.setView = (view) => {
+            const isCanvas = view === 'canvas';
+            document.getElementById('navChat').className = `w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${!isCanvas ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`;
+            document.getElementById('navCanvas').className = `w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${isCanvas ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`;
+            document.getElementById('chatArea').classList.toggle('hidden', isCanvas);
+            document.getElementById('canvasArea').classList.toggle('hidden', !isCanvas);
+            document.getElementById('viewTitle').innerText = isCanvas ? "Code Canvas" : "Assistant Chat";
+            toggleFullscreenPreview(false);
+            toggleLeft(false);
+        };
+
+        window.updatePreview = () => {
+            const code = document.getElementById('codeEditor').value;
+            const iframe = document.getElementById('canvasPreview');
+            const blob = new Blob([code], { type: 'text/html' });
+            iframe.src = URL.createObjectURL(blob);
+        };
+
+        window.toggleFullscreenPreview = (enable) => {
+            document.body.classList.toggle('fullscreen-preview', enable);
+            document.getElementById('fullscreenBtn').classList.toggle('hidden', enable);
+            document.getElementById('exitFullscreenBtn').classList.toggle('hidden', !enable);
+            lucide.createIcons();
+        };
+
+        window.handleAction = async () => {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            const list = document.getElementById('messagesList');
+            list.classList.remove('hidden');
+            
+            list.innerHTML += `<div class="flex justify-end"><div class="p-4 bg-blue-600 text-white rounded-2xl rounded-br-none text-sm font-medium">${text}</div></div>`;
+            input.value = "";
+            input.style.height = "auto";
+            
+            const typingId = 't-' + Date.now();
+            list.innerHTML += `<div id="${typingId}" class="flex gap-1 p-4 bg-white rounded-2xl w-fit shadow-sm"><div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div><div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div></div>`;
+            list.lastElementChild.scrollIntoView({behavior:'smooth'});
+
+            if (!geminiKey) {
+                document.getElementById(typingId).innerHTML = "Set your Gemini API Key in Settings to enable AI features.";
+                return;
+            }
+
+            try {
+                const isCodeRequest = text.toLowerCase().includes('page') || text.toLowerCase().includes('code') || text.toLowerCase().includes('site') || text.toLowerCase().includes('canvas');
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiKey}`;
+                
+                const prompt = isCodeRequest 
+                    ? `Create a modern, beautiful HTML/Tailwind page based on: "${text}". Respond ONLY with the code.`
+                    : `Respond as a recruitment assistant: ${text}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const res = await response.json();
+                let aiResponse = res.candidates?.[0]?.content?.parts?.[0]?.text || "Error processing request.";
+                document.getElementById(typingId).remove();
+
+                if (isCodeRequest) {
+                    const cleanCode = aiResponse.replace(/```html|```/g, '').trim();
+                    const blob = new Blob([cleanCode], { type: 'text/html' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    list.innerHTML += `
+                        <div class="flex justify-start">
+                            <div class="chat-bubble-ai bg-white border border-slate-200 shadow-sm p-4 w-full">
+                                <p class="text-xs font-bold text-slate-400 mb-3 uppercase flex items-center gap-2">
+                                    <i data-lucide="monitor" class="w-3 h-3"></i> Inline Preview
+                                </p>
+                                <div class="relative w-full aspect-video border border-slate-100 rounded-xl overflow-hidden mb-3">
+                                    <iframe src="${blobUrl}" class="w-full h-full inline-preview-iframe pointer-events-none"></iframe>
+                                    <div class="absolute inset-0 bg-transparent"></div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="openInCanvas(\`${cleanCode.replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`)" class="flex-1 bg-blue-600 text-white text-[10px] font-bold py-2 rounded-lg">EDIT & FULL PREVIEW</button>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    list.innerHTML += `<div class="flex justify-start"><div class="chat-bubble-ai bg-white border border-slate-200 shadow-sm p-5 text-sm text-slate-700">${aiResponse}</div></div>`;
+                }
+            } catch(e) { 
+                document.getElementById(typingId).innerHTML = "Failed to fetch response.";
+            }
+            lucide.createIcons();
+            list.lastElementChild.scrollIntoView({behavior:'smooth'});
+        };
+
+        window.openInCanvas = (code) => {
+            document.getElementById('codeEditor').value = code;
+            setView('canvas');
+            updatePreview();
+        };
+
+        window.popOutPreview = () => {
+            const code = document.getElementById('codeEditor').value;
+            const win = window.open();
+            win.document.write(code);
+            win.document.close();
+        };
+
+        window.saveApiKey = () => {
+            geminiKey = document.getElementById('geminiKey').value;
+            localStorage.setItem('GEMINI_API_KEY', geminiKey);
+            alert("API Key Saved");
+        };
+
+        function setupListeners() {
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'logs')), (snap) => {
+                const container = document.getElementById('logContainer');
+                container.innerHTML = `<p class="px-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6 mb-2">Logs</p>`;
+                snap.docs.sort((a,b) => b.data().timestamp - a.data().timestamp).forEach(doc => {
+                    container.innerHTML += `<div class="mx-4 p-3 rounded-xl hover:bg-white text-xs font-bold text-slate-600 truncate mb-1 cursor-pointer">${doc.data().title}</div>`;
+                });
+            });
         }
-      }
-    });
 
-    document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
-
-    onAuthStateChanged(auth, (user) => {
-      const guestView = document.getElementById("guest");
-      const dashView = document.getElementById("dashboard");
-      if (user) {
-        guestView.style.display = "none";
-        dashView.style.display = "block";
-        document.getElementById("display-email").textContent = user.email;
-        initRealtimeData();
-      } else {
-        guestView.style.display = "block";
-        dashView.style.display = "none";
-      }
-    });
-
-    // --- NAVIGATION ---
-    const buttons = document.querySelectorAll("nav button");
-    const sections = document.querySelectorAll("#tab-content section");
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        buttons.forEach(b => b.classList.remove("active"));
-        sections.forEach(s => s.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById(btn.dataset.tab).classList.add("active");
-      });
-    });
-
-    // --- REAL-TIME ENGINE ---
-    function initRealtimeData() {
-      // Feed
-      const feedQuery = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
-      onSnapshot(feedQuery, (snap) => {
-        const container = document.getElementById("feedPosts");
-        container.innerHTML = "";
-        snap.forEach(doc => {
-          const post = doc.data();
-          container.innerHTML += `
-            <article class="post">
-              <h3>@${post.author.split('@')[0]}</h3>
-              <p>${post.content}</p>
-              <div class="actions"><button>Like</button><button>Comment</button></div>
-            </article>`;
-        });
-      });
-
-      // Global Chat
-      const msgQuery = query(collection(db, "messages"), orderBy("createdAt", "asc"), limit(50));
-      onSnapshot(msgQuery, (snap) => {
-        const container = document.getElementById("messageList");
-        container.innerHTML = "";
-        snap.forEach(doc => {
-          const m = doc.data();
-          container.innerHTML += `<p><strong>${m.user}:</strong> ${m.text}</p>`;
-        });
-        container.scrollTop = container.scrollHeight;
-      });
-
-      // Streams Sidebar
-      const streamQuery = query(collection(db, "streams"), orderBy("createdAt", "desc"), limit(5));
-      onSnapshot(streamQuery, (snap) => {
-        const list = document.getElementById("activeStreams");
-        list.innerHTML = snap.empty ? "<li>No active streams</li>" : "";
-        snap.forEach(doc => {
-          const s = doc.data();
-          list.innerHTML += `<li>LIVE: ${s.title} (By ${s.host.split('@')[0]})</li>`;
-        });
-      });
-    }
-
-    // --- ACTIONS ---
-    document.getElementById("submitPost").addEventListener("click", async () => {
-      const content = document.getElementById("postInput").value;
-      if (!content) return;
-      await addDoc(collection(db, "posts"), {
-        author: auth.currentUser.email,
-        content: content,
-        createdAt: serverTimestamp()
-      });
-      document.getElementById("postInput").value = "";
-    });
-
-    document.getElementById("sendMsgBtn").addEventListener("click", async () => {
-      const text = document.getElementById("msgInput").value;
-      if (!text) return;
-      await addDoc(collection(db, "messages"), {
-        user: auth.currentUser.email.split('@')[0],
-        text: text,
-        createdAt: serverTimestamp()
-      });
-      document.getElementById("msgInput").value = "";
-    });
-    // --- Messaging Yewilsaw ---
-    const servers = {
-  iceServers: [
-    { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
-  ],
-  iceCandidatePoolSize: 10,
-};
-
-let pc = new RTCPeerConnection(servers);
-let localStream = null;
-let remoteStream = null;
-
-// 1. Setup Media
-async function startWebcam() {
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  remoteStream = new MediaStream();
-
-  // Push local tracks to the peer connection
-  localStream.getTracks().forEach((track) => {
-    pc.addTrack(track, localStream);
-  });
-
-  // Pull remote tracks when they arrive
-  pc.ontrack = (event) => {
-    event.streams[0].getTracks().forEach((track) => {
-      remoteStream.addTrack(track);
-    });
-  };
-
-  document.getElementById('localStream').srcObject = localStream;
-  document.getElementById('remoteStream').srcObject = remoteStream;
-}
-
-// 2. Create a Connection "Room" (Caller)
-async function createCall() {
-  const callDoc = doc(collection(db, 'calls'));
-  const offerCandidates = collection(callDoc, 'offerCandidates');
-  const answerCandidates = collection(callDoc, 'answerCandidates');
-
-  const callId = callDoc.id;
-
-  // Get ICE candidates and save to Firestore
-  pc.onicecandidate = (event) => {
-    event.candidate && addDoc(offerCandidates, event.candidate.toJSON());
-  };
-
-  // Create Offer
-  const offerDescription = await pc.createOffer();
-  await pc.setLocalDescription(offerDescription);
-
-  const offer = {
-    sdp: offerDescription.sdp,
-    type: offerDescription.type,
-  };
-
-  await setDoc(callDoc, { offer });
-
-  // Listen for Remote Answer
-  onSnapshot(callDoc, (snapshot) => {
-    const data = snapshot.data();
-    if (!pc.currentRemoteDescription && data?.answer) {
-      const answerDescription = new RTCSessionDescription(data.answer);
-      pc.setRemoteDescription(answerDescription);
-    }
-  });
-
-  // Listen for Remote ICE Candidates
-  onSnapshot(answerCandidates, (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === 'added') {
-        const candidate = new RTCIceCandidate(change.doc.data());
-        pc.addIceCandidate(candidate);
-      }
-    });
-  });
-
-  console.log(`Call ID: ${callId} - Share this with your friend!`);
-}
-
-// 3. Join a Call (Callee)
-async function joinCall(callId) {
-  const callDoc = doc(db, 'calls', callId);
-  const answerCandidates = collection(callDoc, 'answerCandidates');
-  const offerCandidates = collection(callDoc, 'offerCandidates');
-
-  pc.onicecandidate = (event) => {
-    event.candidate && addDoc(answerCandidates, event.candidate.toJSON());
-  };
-
-  const callData = (await getDoc(callDoc)).data();
-
-  const offerDescription = callData.offer;
-  await pc.setRemoteDescription(new RTCSessionDescription(offerDescription));
-
-  const answerDescription = await pc.createAnswer();
-  await pc.setLocalDescription(answerDescription);
-
-  const answer = {
-    type: answerDescription.type,
-    sdp: answerDescription.sdp,
-  };
-
-  await updateDoc(callDoc, { answer });
-
-  onSnapshot(offerCandidates, (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === 'added') {
-        const data = change.doc.data();
-        [span_6](start_span)pc.addIceCandidate(new RTCIceCandidate(data));[span_6](end_span)
-      }
-    });
-  });
-}
-
-
-    // --- UPLOADS ---
-    document.getElementById("uploadBtn").addEventListener("click", () => {
-      const file = document.getElementById("fileInput").files[0];
-      if (!file) return;
-      const storageRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      uploadTask.on('state_changed', 
-        (snap) => {
-          const progress = (snap.bytesTransferred / snap.totalBytes) * 100;
-          document.getElementById("uploadStatus").textContent = `Uploading: ${progress.toFixed(0)}%`;
-        }, 
-        null, 
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          await addDoc(collection(db, "uploads"), { name: file.name, url, createdAt: serverTimestamp() });
-          document.getElementById("uploadStatus").textContent = "Upload Complete!";
-        }
-      );
-    });
-
-    // --- WEB RTC / STREAMING ---
-    document.getElementById("goLiveBtn").addEventListener("click", async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById("localStream").srcObject = stream;
-        
-        // Signaling mock (in a full SFU setup, you'd send the SDP offer here)
-        await addDoc(collection(db, "streams"), {
-          host: auth.currentUser.email,
-          title: "Community Hangout",
-          createdAt: serverTimestamp()
-        });
-        
-        document.getElementById("goLiveBtn").textContent = "🔴 LIVE";
-        document.getElementById("goLiveBtn").style.background = "#dc3545";
-      } catch (err) {
-        alert("Camera access denied or unavailable.");
-      }
-    });
-  </script>
+        window.toggleLeft = (s) => {
+            document.getElementById('leftSidebar').classList.toggle('-translate-x-full', !s);
+            document.getElementById('overlay').classList.toggle('hidden', !s);
+        };
+        window.toggleRight = (s) => {
+            document.getElementById('rightSidebar').classList.toggle('translate-x-full', !s);
+            document.getElementById('overlay').classList.toggle('hidden', !s);
+        };
+        window.closeAll = () => { toggleLeft(false); toggleRight(false); };
+    </script>
 </body>
 </html>
-          
