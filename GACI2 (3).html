@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Elementa | Gemini Integration</title>
+    <link rel="stylesheet" href="css/style/Gaci2.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="overlay" onclick="closeDrawers()" aria-hidden="true"></div>
+
+<div id="container">
+    <aside id="drawer-left" class="drawer">
+        <header class="drawer-header">
+            <div class="search-wrapper">
+                <label for="chatSearch" class="sr-only" style="width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px;">Search conversations</label>
+                <input type="text" id="chatSearch" placeholder="Search chats..." class="input-field" style="width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px;">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+            </div>
+            
+        </header>
+        
+        
+         <button class="btn-primary" onclick="createNewThread()" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">+ New Chat</button>
+        <div class="drawer-section-title">
+            <h3>History</h3>
+        </div>
+         
+        
+        <div id="thread-list" class="scroll-area">
+            </div>
+        
+       
+    </aside>
+
+    <aside id="drawer-right" class="drawer">
+        <header class="drawer-header" style="padding: 24px 20px 15px; border-bottom: 1px solid var(--border);">
+            <h3>Config</h3>
+             
+        </header>
+       
+        
+
+        <div class="drawer-content" style="padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+           
+    
+           
+            <section class="settings-group">
+                <div>
+                    
+                
+                <label class="settings-label-caps" style="font-size: 10px; opacity: 0.5;">API Key</label>
+                <input type="password" id="set-key" placeholder="Enter Gemini API Key..." class="input-field" style="width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px;">
+                </div>
+            </section>
+
+            <section class="settings-group">
+                <label class="settings-label-caps" style="font-size: 10px; opacity: 0.5;">Active Model</label>
+                <select id="set-model" class="select-field" style="width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px;">
+                    <option value="gemini-3-flash">Gemini 3 Flash</option>
+                    <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-2.5-pro-preview">Gemini 2.5 Pro Preview</option>
+                </select>
+            </section>
+
+            <section class="settings-group divider-top">
+                <label class="settings-label-caps"  style="font-size: 10px; opacity: 0.5;">Workspace Extensions</label>
+                <button id="btn-connect-google" onclick="handleGoogleAuth()" class="glass-pill-action" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">
+                    <span class="status-dot"></span> Connect Google Workspace
+                </button>
+                <div id="workspace-status" class="status-text">Not connected</div>
+            </section>
+
+            <section class="settings-group">
+                <label class="settings-label-caps" style="font-size: 10px; opacity: 0.5;">Active Tools</label>
+                <div class="badge-container">
+                    <span class="badge">Google Drive</span>
+                    <span class="badge">Gmail</span>
+                    <span class="badge">Calendar</span>
+                </div>
+            </section>
+
+            <section class="settings-group">
+                <label for="settingTtsVoice" class="settings-label-caps" style="font-size: 10px; opacity: 0.5;">TTS Speaker</label>
+                <select id="settingTtsVoice" class="select-field" style="width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px;">
+                    <option value="Kore">Kore (Standard)</option>
+                    <option value="Zephyr">Zephyr (Deep)</option>
+                    <option value="Puck">Puck (Cheerful)</option>
+                    <option value="Charon">Charon (Calm)</option>
+                </select>
+            </section>
+             <section class="settings-group">
+                <label for="settingSystemPrompt" class="settings-label-caps" style="font-size: 10px; opacity: 0.5;">System Personality</label>
+                <textarea id="settingSystemPrompt" rows="3" class="textarea-field" placeholder="Define how Gemini behaves..." style="width: 100%; background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 8px;"></textarea>
+            </section>
+
+            <div class="settings-grid">
+                <div class="field-group">
+                    <span class="settings-label-caps" style="font-size: 10px; opacity: 0.5;">Font Scale</span>
+                    <div class="button-group" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">
+                        <button onclick="window.setFontSize(0.85, this)" class="font-btn" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;"x; border-radius: 8px;">S</button>
+                        <button onclick="window.setFontSize(1, this)" class="font-btn active" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">M</button>
+                        <button onclick="window.setFontSize(1.2, this)" class="font-btn" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">L</button>
+                    </div>
+                </div>
+            </div>
+            <!-- CHAT CONTROLS -->
+                <div>
+                    <label class="block text-sm font-medium mb-3" style="font-size: 10px; opacity: 0.5;">Memory</label>
+                    <button onclick="clearHistory()" class="w-full p-2 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">
+                        Clear All Conversations
+                    </button>
+                </div>
+
+            <button class="btn-primary" onclick="saveSettings()" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">Apply Changes</button>
+            </div>
+        
+    </aside>
+
+    <main id="main">
+        <header class="main-header">
+            <button class="icon-btn" onclick="openDrawer('left')" aria-label="Open History" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">☰</button>
+            <div class="brand">
+                <span class="shimmer-text">Elementa</span>
+            </div>
+            <button class="icon-btn" onclick="openDrawer('right')" aria-label="Open Settings" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">⚙️</button>
+        </header>
+
+        <div id="output" class="chat-viewport"></div>
+
+        <div id="thinking-container" class="glass-pill thinking-box" style="display:none;">
+            <div class="thinking-header">
+                <div class="spinner"></div> 
+                <span class="thinking-label">GEMINI IS THINKING...</span>
+            </div>
+            <div id="thought-details" class="thought-log">
+                Searching Workspace... Cross-referencing Google Search...
+            </div>
+        </div>
+
+       
+
+        <output id="toast" class="toast-container" aria-live="polite">
+            <div class="glass-pill toast-content">
+                <span id="toastText">Success</span>
+            </div>
+        </output>
+
+        <div class="interaction-container">
+            <div id="multi-preview-container" class="preview-grid" style="display:none;"></div>
+            
+            <div id="preview-bar" style="display:none;">
+                <img id="p-img" class="thumb">
+                <div id="p-name"></div>
+                <button onclick="clearFile()" class="close-btn">✕</button>
+            </div>
+
+            <div class="input-wrapper">
+                <div class="input-actions-left">
+                    <input type="file" id="f-hidden" hidden accept="image/*">
+                    <button class="glass-circle" onclick="document.getElementById('f-hidden').click()" title="Attach File">📎</button>
+                    <button class="glass-circle" onclick="openDrivePicker()" title="Google Drive">📁</button>
+                </div>
+
+                <div class="textarea-container">
+                    <textarea id="user-input" placeholder="Ask anything..." rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+                    <div id="working-status">Ready</div>
+                     <button id="stop-btn" onclick="stopGeneration()" class="stop-pill" style="display:none;">
+            ■ Stop Generation
+        </button>
+                </div>
+
+                <div class="input-actions-right">
+                    <button class="glass-circle" onclick="toggleSearch()" id="search-toggle" title="Search the Web">🌐</button>
+                    <button class="glass-circle active" onclick="startVoice()" title="Voice Input">🎙️</button>
+                    <button class="send-btn" onclick="handleSend()" title="Send Message" >➤</button>
+                </div>
+            </div>
+
+            <div class="model-selector-bar">
+                <button class="mode-pill active" data-cat="fast">⚡ Fast</button>
+                <button class="mode-pill" data-cat="pro">✨ Pro</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="canvas-panel">
+        <div id="canvas-header">
+            <div><span class="badge-live">LIVE PREVIEW</span></div>
+            <button onclick="toggleCanvas(false)" class="close-canvas">✕</button>
+        </div>
+        <iframe id="canvas-frame" title="Live Preview"></iframe>
+    </div>
+</div>
+
+<div id="lightbox" class="lightbox" onclick="this.style.display='none'">
+    <span class="close-lightbox">✕</span>
+    <img id="lightbox-img" src="" alt="Enlarged view">
+</div>
+
+<script src="js/script/Gaci2.js"></script>
+</body>
+</html>
