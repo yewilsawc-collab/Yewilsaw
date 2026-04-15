@@ -1,0 +1,368 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elementa Code Editor</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+
+<style>
+:root {
+--bg-dark: #1e1e1e;
+--sidebar-bg: #252526;
+--tab-inactive: #2d2d2d;
+--tab-active: #1e1e1e;
+--accent: #007acc;
+--text: #cccccc;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: var(--text); height: 100vh; overflow: hidden; }
+
+.app-container { display: flex; height: 100vh; }
+
+/* Sidebar */
+.sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid #333; display: flex; flex-direction: column; }
+.sidebar-header { padding: 10px 15px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+.sidebar-header i { cursor: pointer; margin-left: 10px; opacity: 0.7; }
+.sidebar-header i:hover { opacity: 1; color: var(--accent); }
+
+.file-tree { flex: 1; overflow-y: auto; padding: 10px 0; }
+
+.tree-item.active { background: #37373d; color: white; }
+.tree-item .actions { margin-left: auto; display: none; }
+.tree-item:hover .actions { display: flex; gap: 8px; }
+.tree-item .actions i:hover { color: #ff4444; }
+
+/* Main Content Area */
+.main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
+
+/* Tab Bar */
+.tab-bar-wrapper { display: flex; background: #252526; height: 35px; align-items: center; }
+.tab-bar { display: flex; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.tab { 
+    display: flex; align-items: center; padding: 0 15px; height: 35px; 
+    background: var(--tab-inactive); border-right: 1px solid #1e1e1e; 
+    cursor: pointer; font-size: 13px; min-width: 120px; position: relative;
+}
+.tab.active { background: var(--tab-active); color: white; border-top: 1px solid var(--accent); }
+.tab i.close-tab { margin-left: 10px; font-size: 10px; opacity: 0.5; }
+.tab i.close-tab:hover { opacity: 1; color: #ff4444; }
+
+/* Search Bar (Non-Jumping) */
+.search-container {
+    position: absolute; top: 40px; right: 30px; z-index: 100;
+    background: #252526; border: 1px solid #454545; padding: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;
+}
+.search-box { display: flex; align-items: center; gap: 5px; }
+.search-box input { 
+    background: #3c3c3c; border: 1px solid #3c3c3c; color: white; 
+    padding: 4px 8px; outline: none; width: 200px;
+}
+#search-counter { font-size: 11px; min-width: 40px; text-align: center; }
+.search-box button { background: none; border: none; color: white; cursor: pointer; padding: 2px 5px; }
+.search-box button:hover { background: #444; }
+
+/* Editor */
+.editor-wrapper { flex: 1; width: 100%; }
+#editor {
+    width: 100%; height: 100%; background: var(--bg-dark); color: #d4d4d4;
+    border: none; outline: none; padding: 20px; resize: none;
+    font-family: 'Consolas', monospace; font-size: 16px; line-height: 1.5;
+}
+
+</style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span>EXPLORER</span>
+            <div class="actions">
+                <i class="fas fa-file-medical" onclick="promptNewItem('file')" title="New File"></i>
+                <i class="fas fa-folder-plus" onclick="promptNewItem('folder')" title="New Folder"></i>
+                <label for="import-file"><i class="fas fa-upload" title="Import File"></i></label>
+                <input type="file" id="import-file" hidden onchange="importFile(event)">
+            </div>
+        </div>
+        <div id="file-tree" class="file-tree"></div>
+    </aside>
+
+    <!-- Main Editor Area -->
+    <main class="main-content">
+        <!-- Search Bar -->
+        <div class="search-container" id="search-container">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search code..." oninput="executeSearch()">
+                <span id="search-counter">0/0</span>
+                <button onclick="navigateSearch(-1)"><i class="fas fa-chevron-up"></i></button>
+                <button onclick="navigateSearch(1)"><i class="fas fa-chevron-down"></i></button>
+                <button onclick="toggleSearch()"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="tab-bar-wrapper">
+            <div id="tab-bar" class="tab-bar"></div>
+            <button class="search-toggle-btn" onclick="toggleSearch()"><i class="fas fa-search"></i></button>
+        </div>
+
+        <!-- Editor -->
+        <div class="editor-wrapper">
+            <textarea id="editor" spellcheck="false" oninput="updateFileContent()"></textarea>
+        </div>
+    </main>
+</div>
+
+<script src="script.js"></script>
+
+
+
+
+
+
+<script>
+
+// --- STATE MANAGEMENT ---
+let files = [
+{ id: '1', name: 'index.html', type: 'file', content: '
+Hello
+', parent: null },
+{ id: '2', name: 'style.css', type: 'file', content: 'body { background: #000; }', parent: null }
+];
+let openTabs = []; // Array of file IDs
+let activeFileId = null;
+let searchMatches = [];
+let currentSearchIndex = -1;
+
+const editor = document.getElementById('editor');
+const fileTree = document.getElementById('file-tree');
+const tabBar = document.getElementById('tab-bar');
+
+// --- FILE SYSTEM LOGIC ---
+function renderTree() {
+fileTree.innerHTML = '';
+files.forEach(file => {
+const div = document.createElement('div');
+div.className = `tree-item ${activeFileId === file.id ? 'active' : ''}`;
+const icon = file.type === 'folder' ? 'fa-folder folder' : getFileIcon(file.name);
+
+div.innerHTML = `
+
+${file.name}
+
+
+
+
+`;
+div.onclick = () => openFile(file.id);
+fileTree.appendChild(div);
+});
+}
+
+function getFileIcon(filename) {
+if (filename.endsWith('.html')) return 'fa-code text-orange';
+if (filename.endsWith('.css')) return 'fa-css3 text-blue';
+if (filename.endsWith('.js')) return 'fa-js text-yellow';
+if (filename.endsWith('.json')) return 'fa-brackets-curly text-green';
+return 'fa-file';
+}
+
+function promptNewItem(type) {
+const name = prompt(`Enter ${type} name:`);
+if (!name) return;
+const newItem = {
+id: Date.now().toString(),
+name: name,
+type: type,
+content: '',
+parent: null
+};
+files.push(newItem);
+renderTree();
+}
+
+function deleteItem(id, e) {
+e.stopPropagation();
+files = files.filter(f => f.id !== id);
+openTabs = openTabs.filter(tid => tid !== id);
+if (activeFileId === id) {
+activeFileId = openTabs.length > 0 ? openTabs[0] : null;
+}
+renderTree();
+renderTabs();
+loadActiveFile();
+}
+
+function renameItem(id, e) {
+    e.stopPropagation();
+    const file = files.find(f => f.id === id);
+    const newName = prompt("Enter new name:", file.name);
+    if (newName) {
+        file.name = newName;
+        renderTree();
+        renderTabs();
+    }
+}
+
+function openFile(id) {
+    const file = files.find(f => f.id === id);
+    if (file.type === 'folder') return;
+
+    if (!openTabs.includes(id)) {
+        openTabs.push(id);
+    }
+    activeFileId = id;
+    renderTabs();
+    renderTree();
+    loadActiveFile();
+}
+
+// --- TAB MANAGEMENT ---
+
+function renderTabs() {
+    tabBar.innerHTML = '';
+    openTabs.forEach(id => {
+        const file = files.find(f => f.id === id);
+        const tab = document.createElement('div');
+        tab.className = `tab ${activeFileId === id ? 'active' : ''}`;
+        tab.innerHTML = `
+            <span>${file.name}</span>
+            <i class="fas fa-times close-tab" onclick="closeTab('${id}', event)"></i>
+        `;
+        tab.onclick = () => {
+            activeFileId = id;
+            renderTabs();
+            renderTree();
+            loadActiveFile();
+        };
+        tabBar.appendChild(tab);
+    });
+}
+
+function closeTab(id, e) {
+    e.stopPropagation();
+    openTabs = openTabs.filter(tid => tid !== id);
+    if (activeFileId === id) {
+        activeFileId = openTabs.length > 0 ? openTabs[openTabs.length - 1] : null;
+    }
+    renderTabs();
+    renderTree();
+    loadActiveFile();
+}
+
+function loadActiveFile() {
+    const file = files.find(f => f.id === activeFileId);
+    if (file) {
+        editor.value = file.content;
+        editor.disabled = false;
+        editor.placeholder = `Editing ${file.name}...`;
+    } else {
+        editor.value = '';
+        editor.disabled = true;
+        editor.placeholder = 'Select a file to edit';
+    }
+}
+
+function updateFileContent() {
+    const file = files.find(f => f.id === activeFileId);
+    if (file) {
+        file.content = editor.value;
+    }
+}
+
+// --- IMPORT LOGIC ---
+
+function importFile(event) {
+    const fileReader = new FileReader();
+    const fileObj = event.target.files[0];
+    
+    if (!fileObj) return;
+
+    fileReader.onload = function(e) {
+        const newItem = {
+            id: Date.now().toString(),
+            name: fileObj.name,
+            type: 'file',
+            content: e.target.result,
+            parent: null
+        };
+        files.push(newItem);
+        renderTree();
+        openFile(newItem.id);
+    };
+    fileReader.readAsText(fileObj);
+}
+
+// --- SEARCH ENGINE (Live Search & Navigation) ---
+
+function toggleSearch() {
+    const container = document.getElementById('search-container');
+    const isVisible = container.style.display === 'block';
+    container.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) document.getElementById('search-input').focus();
+}
+
+function executeSearch() {
+    const query = document.getElementById('search-input').value;
+    const content = editor.value;
+    searchMatches = [];
+    currentSearchIndex = -1;
+
+    if (query.length > 0) {
+        let index = content.indexOf(query);
+        while (index !== -1) {
+            searchMatches.push(index);
+            index = content.indexOf(query, index + 1);
+        }
+    }
+
+    updateSearchUI();
+}
+
+function updateSearchUI() {
+    const counter = document.getElementById('search-counter');
+    if (searchMatches.length > 0) {
+        counter.innerText = `${currentSearchIndex + 1}/${searchMatches.length}`;
+    } else {
+        counter.innerText = '0/0';
+    }
+}
+
+function navigateSearch(direction) {
+    if (searchMatches.length === 0) return;
+
+    currentSearchIndex += direction;
+
+    if (currentSearchIndex >= searchMatches.length) currentSearchIndex = 0;
+    if (currentSearchIndex < 0) currentSearchIndex = searchMatches.length - 1;
+
+    const pos = searchMatches[currentSearchIndex];
+    const queryLength = document.getElementById('search-input').value.length;
+
+    // Focus and highlight the text in the textarea
+    editor.focus();
+    editor.setSelectionRange(pos, pos + queryLength);
+    
+    // Scroll to the selection
+    const lineHeight = 24; // Approximate
+    const charsPerLine = 50; 
+    editor.scrollTop = (pos / charsPerLine) * lineHeight - 100;
+
+    updateSearchUI();
+}
+
+// Initialize
+renderTree();
+loadActiveFile();
+
+
+</script>
+</body>
+</html>
