@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Elementa Pro | Adaptive</title>
+<style>
+:root {
+--bg: #0a0a0a;
+--panel: #161616;
+--accent: #3b82f6;
+--text: #e5e7eb;
+--border: #262626;
+--drawer-w: 300px;
+--safe-top: env(safe-area-inset-top, 0px);
+--safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+body { background: var(--bg); color: var(--text); height: 100dvh; display: flex; overflow: hidden; position: fixed; width: 100%; }
+
+#container { display: flex; width: 100%; height: 100%; transition: all 0.3s ease; }
+#container.canvas-active #main { flex: 0.4; border-right: 1px solid var(--border); }
+#canvas-panel { flex: 0.6; display: none; background: #fff; position: relative; flex-direction: column; }
+#container.canvas-active #canvas-panel { display: flex; }
+
+ /* --- Drawers --- */
+        .drawer {
+            position: fixed; top: 0; bottom: 0; width: var(--drawer-w);
+            background: var(--panel); border-right: 1px solid var(--border);
+            z-index: 2000; display: flex; flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            padding-top: var(--safe-top); padding-bottom: var(--safe-bottom);
+        }
+        #drawer-left { left: 0; transform: translate3d(-105%, 0, 0); }
+        #drawer-right { right: 0; transform: translate3d(105%, 0, 0); border-left: 1px solid var(--border); }
+        .drawer.open { transform: translate3d(0, 0, 0) !important; }
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 1500; backdrop-filter: blur(8px); }
+        #overlay.active { opacity: 1; pointer-events: auto; }
+
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+header { height: calc(60px + var(--safe-top)); display: flex; align-items: flex-end; justify-content: space-between; padding: 0 15px 12px; border-bottom: 1px solid var(--border); background: var(--bg); }
+
+#output { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; padding-bottom: 120px; }
+
+.msg-wrap { display: flex; flex-direction: column; gap: 6px; }
+.msg-meta { font-size: 10px; font-weight: 800; opacity: 0.4; display: flex; justify-content: space-between; align-items: center; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+.msg-meta:hover { opacity: 1; color: var(--accent); }
+
+.msg { line-height: 1.6; font-size: 15px; position: relative; transition: max-height 0.3s ease; }
+.user { align-self: flex-end; background: #222; color: white; padding: 12px 18px; border-radius: 18px 18px 4px 18px; border: 1px solid var(--border); max-width: 85%; }
+.bot { align-self: flex-start; width: 100%; border-left: 2px solid var(--border); padding-left: 15px; }
+
+.collapsed .msg-body { display: none; }
+.collapsed::after { content: 'Content hidden. Click header to expand.'; font-size: 11px; opacity: 0.3; font-style: italic; margin-top: 4px; }
+
+.stepper-btn { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; margin-top: 10px; font-weight: 600; width: fit-content; }
+
+.input-container { position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(transparent, var(--bg) 50%); z-index: 10; }
+.bar { display: flex; align-items: flex-end; gap: 10px; background: #1a1a1a; border-radius: 20px; padding: 10px 16px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+textarea { flex: 1; background: transparent; border: none; color: #fff; padding: 8px 0; font-size: 16px; outline: none; resize: none; max-height: 200px; }
+
+#canvas-header { background: #f0f0f0; padding: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; color: #000; }
+#canvas-frame { flex: 1; border: none; background: #fff; }
+
+pre { background: #000; padding: 15px; border-radius: 8px; margin: 12px 0; overflow-x: auto; position: relative; border: 1px solid #333; }
+.code-tools { position: absolute; top: 8px; right: 12px; font-size: 10px; display: flex; gap: 12px; }
+.code-tools span { color: var(--accent); cursor: pointer; font-weight: bold; }
+
+.typing { display: flex; gap: 4px; padding: 10px 0; }
+.dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; animation: bounce 1.4s infinite; }
+@keyframes bounce { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
+
+ #preview-bar { background: #1a1a1a; padding: 10px 15px; display: none; align-items: center; border-top: 1px solid var(--border); gap: 10px; }
+        .thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
+
+        .typing { display: flex; gap: 4px; padding: 8px 0; }
+        .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+
+        @media (max-width: 768px) {
+            #container.canvas-active #main { display: none; }
+            #container.canvas-active #canvas-panel { flex: 1; }
+        }
+        
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="closeDrawers()"></div>
+
+<div id="container">
+<aside id="drawer-left" class="drawer">
+<div style="padding: 20px; border-bottom: 1px solid var(--border);"><h3>History</h3></div>
+<div id="thread-list"></div>
+<button onclick="createNewThread()" style="margin: 20px; padding: 10px; background: var(--accent); border: none; color: white; border-radius: 8px; cursor: pointer;">+ New Chat</button>
+</aside>
+
+<aside id="drawer-right" class="drawer">
+<div style="padding: 20px; border-bottom: 1px solid var(--border);"><h3>Configuration</h3></div>
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+<input type="password" id="set-key" placeholder="Gemini API Key" style="padding: 12px; background: #000; color: #fff; border: 1px solid var(--border); border-radius: 8px;">
+<select id="set-model" style="padding: 12px; background: #000; color: #fff; border: 1px solid var(--border); border-radius: 8px;">
+<option value="gemini-3-flash">Gemini 3 Flash</option>
+<option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+<option value="gemini-2.5-pro-preview">Gemini 2.5 Pro Preview</option>
+</select>
+<button onclick="saveSettings()" style="background: var(--accent); color: #fff; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">Save Settings</button>
+</div>
+</aside>
+
+<div id="main">
+<header>
+<button class="btn" style="color:white; background:none; border:none; font-size:20px;" onclick="openDrawer('left')">☰</button>
+<div style="font-weight: 800; font-size: 18px; letter-spacing: -0.5px;">ELEMENTA <span style="color:var(--accent)">PRO</span></div>
+<button class="btn" style="color:white; background:none; border:none; font-size:20px;" onclick="openDrawer('right')">⚙️</button>
+</header>
+
+<div id="output"></div>
+ <div id="preview-bar">
+            <img id="p-img" class="thumb">
+            <div id="p-name" style="flex: 1; font-size: 12px; opacity: 0.6;"></div>
+            <button onclick="clearFile()" style="color: #ef4444; border:none; background:none;">✕</button>
+        </div>
+
+<div class="input-container">
+<div class="bar">
+<input type="file" id="f-hidden" hidden accept="image/*">
+<button class="btn" style="color:#666; background:none; border:none;" onclick="document.getElementById('f-hidden').click()">📎</button>
+<textarea id="user-input" placeholder="Enter prompt..." rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+<button class="btn" style="color: var(--accent); background:none; border:none; font-weight: bold; padding-left:10px;" onclick="handleSend()">SEND</button>
+</div>
+</div>
+</div>
+
+<div id="canvas-panel">
+<div id="canvas-header">
+<div style="font-weight: bold;">Canvas Artifact</div>
+<button onclick="toggleCanvas(false)" style="border:none; cursor:pointer; font-weight: bold;">✕ Close</button>
+</div>
+<iframe id="canvas-frame"></iframe>
+</div>
+</div>
+
+<script>
+
+let chatHistory = JSON.parse(localStorage.getItem('el_v11_chats')) || [];
+let activeThreadId = localStorage.getItem('el_v11_active') || null;
+let stagedFile = null;
+let isRequesting = false;
+const WORD_STEP = 150;
+
+function toggleCanvas(show) { document.getElementById('container').classList.toggle('canvas-active', show); }
+
+function updateCanvas(code) {
+const frame = document.getElementById('canvas-frame');
+frame.srcdoc = code.includes('<html') ? code : `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px;">${code}</body></html>`;
+toggleCanvas(true);
+}
+
+function mdParser(text) {
+return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+return `<pre><div class="code-tools"><span onclick="updateCanvas(this.closest('pre').querySelector('code').innerText)">PREVIEW</span><span onclick="copyCode(this)">COPY</span></div><code>${code.trim()}</code></pre>`;
+}).replace(/\n/g, '<br>');
+}
+
+function render(role, text, file = null) {
+const out = document.getElementById('output');
+const wrap = document.createElement('div');
+wrap.className = `msg-wrap ${role}-wrap`;
+
+const meta = document.createElement('div');
+meta.className = 'msg-meta';
+meta.innerHTML = `<span>● ${role}</span> <span>Collapse</span>`;
+meta.onclick = () => wrap.classList.toggle('collapsed');
+
+const body = document.createElement('div');
+body.className = `msg ${role} msg-body`;
+
+if (file) body.innerHTML += `<img src="${file.data}" style="max-width:100%; display:block; border-radius:12px; margin-bottom:15px; border:1px solid var(--border);">`;
+
+const words = text.split(/\s+/);
+if (words.length > WORD_STEP) {
+let currentLimit = WORD_STEP;
+const contentDiv = document.createElement('div');
+contentDiv.innerHTML = mdParser(words.slice(0, currentLimit).join(' '));
+
+const btn = document.createElement('button');
+btn.className = 'stepper-btn';
+btn.innerText = `Show More (+${WORD_STEP} words)`;
+btn.onclick = (e) => {
+e.stopPropagation();
+currentLimit += WORD_STEP;
+contentDiv.innerHTML = mdParser(words.slice(0, currentLimit).join(' '));
+if (currentLimit >= words.length) btn.remove();
+};
+
+body.appendChild(contentDiv);
+body.appendChild(btn);
+} else {
+body.innerHTML += mdParser(text);
+}
+
+wrap.appendChild(meta);
+wrap.appendChild(body);
+
+if(role === 'user') {
+const replay = document.createElement('div');
+replay.style = "font-size:10px; color:var(--accent); cursor:pointer; margin-top:5px; align-self:flex-end;";
+replay.innerText = "EDIT PROMPT";
+replay.onclick = () => { document.getElementById('user-input').value = text; document.getElementById('user-input').focus(); };
+wrap.appendChild(replay);
+}
+
+out.appendChild(wrap);
+out.scrollTop = out.scrollHeight;
+
+if(role === 'bot' && text.includes('```')) {
+const m = text.match(/```(?:html|)\n([\s\S]*?)```/i);
+if(m) updateCanvas(m[1]);
+}
+}
+
+async function handleSend() {
+if (isRequesting) return;
+const field = document.getElementById('user-input');
+const key = localStorage.getItem('el_key');
+if (!key) return alert("Missing API Key in Settings");
+
+const text = field.value.trim();
+if (!text && !stagedFile) return;
+
+isRequesting = true;
+render('user', text, stagedFile);
+
+let thread = chatHistory.find(t => t.id === activeThreadId) || createNewThread(true);
+thread.messages.push({ role: 'user', content: text, file: stagedFile });
+
+field.value = ''; field.style.height = '46px';
+const loader = document.createElement('div');
+loader.id = "loader";
+loader.innerHTML = `<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+document.getElementById('output').appendChild(loader);
+
+try {
+const model = localStorage.getItem('el_model') || 'gemini-3-flash-preview';
+const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+contents: thread.messages.map(m => ({
+role: m.role === 'user' ? 'user' : 'model',
+parts: [{ text: m.content || "Analyze input" }, ...(m.file ? [{ inline_data: { mime_type: m.file.type, data: m.file.data.split(',')[1] } }] : [])]
+})),
+systemInstruction: { parts: [{ text: "You are Elementa Pro. Expert coder. Use ```html blocks for web projects." }] }
+})
+});
+const data = await res.json();
+const reply = data.candidates[0].content.parts[0].text;
+document.getElementById('loader').remove();
+render('bot', reply);
+thread.messages.push({ role: 'model', content: reply });
+saveData();
+} catch (e) {
+if(document.getElementById('loader')) document.getElementById('loader').remove();
+render('bot', "Connection Error. Check Key/Model.");
+}
+isRequesting = false;
+stagedFile = null;
+}
+
+function createNewThread(internal = false) {
+const id = 't_' + Date.now();
+const thread = { id, title: 'New Conversation', messages: [] };
+chatHistory.unshift(thread);
+activeThreadId = id;
+if(!internal) { document.getElementById('output').innerHTML = ''; saveData(); closeDrawers(); }
+return thread;
+}
+
+function saveData() { localStorage.setItem('el_v11_chats', JSON.stringify(chatHistory)); localStorage.setItem('el_v11_active', activeThreadId); }
+function openDrawer(id) { document.getElementById('drawer-'+id).classList.add('open'); document.getElementById('overlay').classList.add('active'); }
+function closeDrawers() { document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open')); document.getElementById('overlay').classList.remove('active'); }
+function saveSettings() {
+localStorage.setItem('el_key', document.getElementById('set-key').value);
+localStorage.setItem('el_model', document.getElementById('set-model').value);
+closeDrawers();
+}
+function copyCode(btn) {
+navigator.clipboard.writeText(btn.closest('pre').querySelector('code').innerText);
+btn.innerText = 'COPIED'; setTimeout(() => btn.innerText = 'COPY', 2000);
+}
+
+
+document.getElementById('f-hidden').onchange = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = (ev) => {
+            stagedFile = { data: ev.target.result, type: f.type, name: f.name };
+            document.getElementById('preview-bar').style.display = 'flex';
+            document.getElementById('p-img').src = stagedFile.data;
+            document.getElementById('p-name').innerText = f.name;
+        };
+        r.readAsDataURL(f);
+    };
+
+    function clearFile() { stagedFile = null; document.getElementById('preview-bar').style.display = 'none'; }
+
+
+
+window.onload = () => {
+document.getElementById('set-key').value = localStorage.getItem('el_key') || '';
+document.getElementById('set-model').value = localStorage.getItem('el_model') || 'gemini-3-flash';
+if (!activeThreadId && chatHistory.length === 0) createNewThread();
+};
+
+
+</script>
+</body>
+</html>

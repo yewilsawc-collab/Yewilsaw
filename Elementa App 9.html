@@ -1,0 +1,4688 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+
+
+    <meta charset="UTF-8">
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+
+    <title>Elementa Genesis</title>
+
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+
+    <style>
+
+
+        :root {
+
+
+            --accent: #3b82f6; /* Blue 500 */
+
+
+            --bg: #050505; /* Near black */
+
+
+            --surface: #0f172a; /* Slate 900 */
+
+
+            --glass: rgba(15, 15, 20, 0.8);
+
+
+            --border: rgba(255, 255, 255, 0.08);
+
+
+            --text: #ececec; /* Grey 100 */
+
+
+            --text-dim: #94a3b8; /* Slate 400 */
+
+
+            --drawer-width: 300px;
+
+
+            --header-height: 65px;
+
+
+            --font-size-base: 16px; /* Base font size, adjustable */
+
+
+            --input-bar-height: 84px; /* Default for single line input */
+
+
+            --suggestion-chips-height: 0px; /* Default: hidden */
+
+
+            --chat-search-height: 0px; /* Default: hidden */
+
+
+            --total-bottom-ui-height: calc(var(--input-bar-height) + var(--suggestion-chips-height) + var(--chat-search-height));
+
+
+        }
+
+
+
+        /* Base styles & Reset */
+
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+
+        html, body {
+
+
+            height: 100%;
+
+
+            width: 100%;
+
+
+            /* Removed global position: fixed; as it can cause issues.
+
+
+               The viewport-fit=cover meta tag helps with iOS notch,
+
+
+               and `body.no-scroll` for drawer overflow. */
+
+
+        }
+
+
+        body {
+
+
+            background: var(--bg);
+
+
+            color: var(--text);
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            font-size: var(--font-size-base);
+
+
+            position: relative; /* Needed for drawers */
+
+
+        }
+
+
+        body.no-scroll {
+
+
+            overflow: hidden; /* Only prevent body scroll when drawers are open */
+
+
+        }
+
+
+
+        /* Custom Scrollbar */
+
+
+        ::-webkit-scrollbar { width: 8px; }
+
+
+        ::-webkit-scrollbar-track { background: var(--surface); }
+
+
+        ::-webkit-scrollbar-thumb {
+
+
+            background: rgba(255, 255, 255, 0.15);
+
+
+            border-radius: 10px;
+
+
+            border: 2px solid var(--surface);
+
+
+        }
+
+
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+
+
+        /* --- Header --- */
+
+
+        .header {
+
+
+            height: var(--header-height);
+
+
+            display: flex;
+
+
+            align-items: center;
+
+
+            justify-content: space-between;
+
+
+            padding: 0 16px;
+
+
+            background: var(--glass);
+
+
+            backdrop-filter: blur(20px);
+
+
+            border-bottom: 1px solid var(--border);
+
+
+            z-index: 1000;
+
+
+            flex-shrink: 0; /* Prevent header from shrinking */
+
+
+        }
+
+
+
+        .brand {
+
+
+            font-weight: 800;
+
+
+            letter-spacing: -1px;
+
+
+            font-size: 1.2rem;
+
+
+            color: var(--accent);
+
+
+            transition: color 0.3s ease;
+
+
+        }
+
+
+        .brand.active-drawer {
+
+
+            color: var(--text);
+
+
+        }
+
+
+
+        .btn-icon {
+
+
+            width: 42px;
+
+
+            height: 42px;
+
+
+            min-width: 42px;
+
+
+            border-radius: 12px;
+
+
+            border: 1px solid var(--border);
+
+
+            background: rgba(255,255,255,0.03);
+
+
+            color: var(--text);
+
+
+            display: flex;
+
+
+            align-items: center;
+
+
+            justify-content: center;
+
+
+            cursor: pointer;
+
+
+            transition: all 0.2s;
+
+
+            flex-shrink: 0;
+
+
+            position: relative;
+
+
+        }
+
+
+        .btn-icon:hover { background: rgba(255,255,255,0.06); }
+
+
+        .btn-icon:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+
+
+        .btn-icon:disabled { opacity: 0.6; cursor: not-allowed; }
+
+
+
+        /* --- Drawers --- */
+        .drawer {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: var(--drawer-width);
+            max-width: 90%;
+            background: var(--surface);
+            z-index: 9999;
+            padding: 30px 20px;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            will-change: transform;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #drawer-left { left: 0; transform: translateX(-105%); border-right: 1px solid var(--border); }
+        #drawer-right { right: 0; transform: translateX(105%); border-left: 1px solid var(--border); }
+
+        /* Active State */
+        .drawer.active { transform: translateX(0) !important; }
+
+        .drawer h2 { font-size: 1.5rem; margin-bottom: 10px; color: #fff; }
+
+        /* --- Overlay --- */
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 5000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #overlay.show { opacity: 1; pointer-events: auto; }
+
+
+        /* --- Chat area --- */
+
+
+        #chat-main-content {
+
+
+            flex: 1;
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            position: relative; /* For scroll buttons and floating speaker */
+
+
+            min-height: 0; /* Allow flex item to shrink */
+
+
+        }
+
+
+
+        #chat-flow {
+
+
+            flex: 1;
+
+
+            overflow-y: auto;
+
+
+            padding: 20px;
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            gap: 15px;
+
+
+            scroll-behavior: smooth;
+
+
+            padding-bottom: var(--total-bottom-ui-height); /* Dynamic padding for input, chips, search */
+
+
+            -webkit-overflow-scrolling: touch;
+
+
+            overscroll-behavior-y: contain; /* Prevents background page scroll on mobile */
+
+
+            min-height: 0; /* Important for flex container with overflow */
+
+
+        }
+
+
+
+        .bubble {
+
+
+            max-width: 85%;
+
+
+            padding: 12px 16px;
+
+
+            border-radius: 18px;
+
+
+            line-height: 1.6;
+
+
+            font-size: 15px;
+
+
+            word-wrap: break-word;
+
+
+            animation: slideUp 0.3s ease-out;
+
+
+            white-space: pre-wrap;
+
+
+            position: relative;
+
+
+        }
+
+
+        .bubble.user { align-self: flex-end; background: var(--accent); color: white; }
+
+
+        .bubble.ai { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid var(--border); }
+
+
+
+        .ai-meta {
+
+
+            display: flex;
+
+
+            justify-content: space-between;
+
+
+            align-items: center;
+
+
+            margin-bottom: 8px;
+
+
+            color: var(--text-dim);
+
+
+            font-size: 0.8rem;
+
+
+            font-weight: 600;
+
+
+        }
+
+
+        .ai-meta .ai-identity {
+
+
+            color: var(--accent);
+
+
+            text-transform: uppercase;
+
+
+            letter-spacing: 0.5px;
+
+
+        }
+
+
+
+        /* Reactions and Actions */
+
+
+        .bubble-actions {
+
+
+            display: flex;
+
+
+            gap: 8px;
+
+
+            margin-top: 10px;
+
+
+            justify-content: flex-end;
+
+
+            opacity: 0;
+
+
+            transition: opacity 0.2s ease;
+
+
+            position: relative; /* Ensure it doesn't get squashed */
+
+
+        }
+
+
+        .bubble.ai .bubble-actions { justify-content: flex-start; }
+
+
+        .bubble:hover .bubble-actions, .bubble-actions.visible {
+
+
+            opacity: 1;
+
+
+        }
+
+
+        .bubble-actions .btn-icon {
+
+
+            width: 30px;
+
+
+            height: 30px;
+
+
+            border-radius: 8px;
+
+
+            font-size: 0.9em;
+
+
+            background: rgba(255,255,255,0.02);
+
+
+            border-color: rgba(255,255,255,0.05);
+
+
+        }
+
+
+        .speaker-bubble-btn {
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            border-color: rgba(255,255,255,0.08);
+
+
+        }
+
+
+        .speaker-bubble-btn.speaking {
+
+
+            background: var(--accent);
+
+
+            color: white;
+
+
+            border-color: var(--accent);
+
+
+            filter: drop-shadow(0 0 8px var(--accent)) drop-shadow(0 0 15px rgba(59, 130, 246, 0.5));
+
+
+        }
+
+
+        .speaker-bubble-btn.speaking:hover { background: var(--accent); }
+
+
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+
+
+        .typing-indicator {
+
+
+            display: inline-flex;
+
+
+            gap: 4px;
+
+
+            align-items: center;
+
+
+        }
+
+
+        .typing-indicator span {
+
+
+            display: inline-block;
+
+
+            width: 8px;
+
+
+            height: 8px;
+
+
+            background: var(--text-dim);
+
+
+            border-radius: 50%;
+
+
+            animation: bounce 1.4s infinite ease-in-out;
+
+
+            opacity: 0.6;
+
+
+        }
+
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+
+
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+
+
+        @keyframes bounce {
+
+
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+
+
+            40% { transform: translateY(-8px); opacity: 1; }
+
+
+        }
+
+
+
+        /* --- Chat Search (in-chat) --- */
+
+
+        #chat-search-container {
+
+
+            padding: 10px 15px;
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            border-radius: 20px;
+
+
+            border: 1px solid var(--border);
+
+
+            display: flex;
+
+
+            align-items: center;
+
+
+            gap: 10px;
+
+
+            margin: 15px;
+
+
+            margin-bottom: 0;
+
+
+            z-index: 10;
+
+
+            flex-shrink: 0;
+
+
+            transition: margin 0.3s ease, padding 0.3s ease; /* For smooth hide/show */
+
+
+        }
+
+
+        #chat-search-input {
+
+
+            flex: 1;
+
+
+            background: transparent;
+
+
+            border: none;
+
+
+            color: white;
+
+
+            font-size: 15px;
+
+
+            outline: none;
+
+
+            padding: 5px 0;
+
+
+        }
+
+
+        #chat-search-input::placeholder { color: var(--text-dim); opacity: 0.7; }
+
+
+        .search-controls {
+
+
+            display: flex;
+
+
+            align-items: center;
+
+
+            gap: 5px;
+
+
+            color: var(--text-dim);
+
+
+            font-size: 0.9em;
+
+
+        }
+
+
+        .search-controls .btn-icon {
+
+
+            width: 30px;
+
+
+            height: 30px;
+
+
+            border-radius: 8px;
+
+
+        }
+
+
+        .search-match {
+
+
+            background-color: rgba(255, 255, 0, 0.3); /* Highlight color */
+
+
+            padding: 1px 2px;
+
+
+            border-radius: 3px;
+
+
+        }
+
+
+        .current-search-match {
+
+
+            background-color: var(--accent); /* Current match highlight */
+
+
+            color: white;
+
+
+        }
+
+
+        #chat-search-container.hidden {
+
+
+            display: none;
+
+
+            margin: 0;
+
+
+            padding: 0;
+
+
+            height: 0;
+
+
+            overflow: hidden;
+
+
+            border: none;
+
+
+        }
+
+
+
+
+        /* --- Suggestions Chips (above input) --- */
+
+
+        #suggestion-chips {
+
+
+            display: flex;
+
+
+            gap: 8px;
+
+
+            padding: 10px 20px;
+
+
+            overflow-x: auto;
+
+
+            -webkit-overflow-scrolling: touch;
+
+
+            scrollbar-width: none;
+
+
+            -ms-overflow-style: none;
+
+
+            position: relative;
+
+
+            z-index: 5;
+
+
+            padding-top: 0;
+
+
+            padding-bottom: 10px;
+
+
+            background: var(--bg);
+
+
+            border-top: 1px solid var(--border);
+
+
+            flex-shrink: 0;
+
+
+        }
+
+
+        #suggestion-chips::-webkit-scrollbar { display: none; }
+
+
+        #suggestion-chips.hidden {
+
+
+            display: none;
+
+
+            padding: 0;
+
+
+            height: 0;
+
+
+            overflow: hidden;
+
+
+            border-top: none;
+
+
+        }
+
+
+        .chip {
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            border: 1px solid var(--border);
+
+
+            color: var(--text-dim);
+
+
+            padding: 8px 15px;
+
+
+            border-radius: 20px;
+
+
+            cursor: pointer;
+
+
+            white-space: nowrap;
+
+
+            font-size: 0.9em;
+
+
+            transition: all 0.2s;
+
+
+        }
+
+
+        .chip:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); color: var(--text); }
+
+
+        .chip:active { transform: scale(0.98); }
+
+
+
+        /* --- Input Bar --- */
+
+
+        .footer {
+
+
+            padding: 15px;
+
+
+            background: var(--bg);
+
+
+            border-top: 1px solid var(--border);
+
+
+            position: relative;
+
+
+            z-index: 100;
+
+
+            flex-shrink: 0; /* Prevent footer from shrinking */
+
+
+        }
+
+
+        .input-box {
+
+
+            display: flex;
+
+
+            align-items: flex-end;
+
+
+            gap: 10px;
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            padding: 10px 15px;
+
+
+            border-radius: 25px;
+
+
+            border: 1px solid var(--border);
+
+
+        }
+
+
+
+        textarea {
+
+
+            flex: 1;
+
+
+            background: transparent;
+
+
+            border: none;
+
+
+            color: white;
+
+
+            font-size: 16px;
+
+
+            outline: none;
+
+
+            resize: none;
+
+
+            max-height: 150px;
+
+
+            padding: 5px 0;
+
+
+            line-height: 1.5;
+
+
+            overflow-y: auto; /* Allow textarea to scroll itself */
+
+
+            -webkit-overflow-scrolling: touch;
+
+
+        }
+
+
+        textarea:disabled { opacity: 0.7; cursor: not-allowed; }
+
+
+
+        /* --- Settings UI --- */
+
+
+        .field { display: flex; flex-direction: column; gap: 8px; }
+
+
+        label { font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+
+        input[type="text"], input[type="password"], input[type="search"], select {
+
+
+            background: rgba(0,0,0,0.3);
+
+
+            border: 1px solid var(--border);
+
+
+            padding: 12px;
+
+
+            border-radius: 10px;
+
+
+            color: white;
+
+
+            font-size: 14px;
+
+
+        }
+
+
+        select {
+
+
+            appearance: none;
+
+
+            -webkit-appearance: none;
+
+
+            -moz-appearance: none;
+
+
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+
+
+            background-repeat: no-repeat;
+
+
+            background-position: right 12px center;
+
+
+            padding-right: 35px;
+
+
+        }
+
+
+        input::placeholder { color: var(--text-dim); opacity: 0.7; }
+
+
+        input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+
+
+
+        .save-btn {
+
+
+            background: var(--accent);
+
+
+            color: white;
+
+
+            border: none;
+
+
+            padding: 15px;
+
+
+            border-radius: 12px;
+
+
+            font-weight: 700;
+
+
+            cursor: pointer;
+
+
+            margin-top: auto;
+
+
+            transition: background 0.2s, transform 0.2s;
+
+
+        }
+
+
+        .save-btn:hover { background: #2563eb; }
+
+
+        .save-btn:active { transform: scale(0.98); }
+
+
+
+        .settings-feedback {
+
+
+            position: absolute;
+
+
+            top: -40px;
+
+
+            left: 50%;
+
+
+            transform: translateX(-50%);
+
+
+            background: rgba(var(--accent), 0.9);
+
+
+            color: white;
+
+
+            padding: 8px 15px;
+
+
+            border-radius: 8px;
+
+
+            font-size: 0.9rem;
+
+
+            opacity: 0;
+
+
+            transition: opacity 0.3s ease-out, top 0.3s ease-out;
+
+
+            pointer-events: none;
+
+
+            z-index: 10;
+
+
+        }
+
+
+        .settings-feedback.show {
+
+
+            opacity: 1;
+
+
+            top: 15px;
+
+
+        }
+
+
+
+        /* --- History Items --- */
+
+
+        .history-list {
+
+
+            flex-grow: 1;
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            gap: 8px;
+
+
+            overflow-y: auto;
+
+
+            margin-bottom: 20px;
+
+
+        }
+
+
+        .history-item {
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            border: 1px solid var(--border);
+
+
+            padding: 12px;
+
+
+            border-radius: 10px;
+
+
+            font-size: 14px;
+
+
+            color: var(--text);
+
+
+            cursor: pointer;
+
+
+            transition: background 0.2s, border-color 0.2s;
+
+
+            overflow: hidden;
+
+
+            text-overflow: ellipsis;
+
+
+            white-space: nowrap;
+
+
+        }
+
+
+        .history-item:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); }
+
+
+        .history-item.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+
+
+        .history-item.active:hover { background: var(--accent); }
+
+
+
+        .new-chat-btn {
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            border: 1px solid var(--border);
+
+
+            color: var(--text);
+
+
+            padding: 12px;
+
+
+            border-radius: 10px;
+
+
+            font-weight: 600;
+
+
+            cursor: pointer;
+
+
+            text-align: center;
+
+
+            transition: background 0.2s, border-color 0.2s;
+
+
+        }
+
+
+        .new-chat-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); }
+
+
+
+        /* --- Chat Scroll Buttons --- */
+
+
+        #chat-scroll-buttons {
+
+
+            position: absolute; /* Changed to absolute to be relative to #chat-main-content */
+
+
+            bottom: calc(var(--total-bottom-ui-height) + 15px); /* Position above the bottom UI */
+
+
+            right: 20px;
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            gap: 10px;
+
+
+            z-index: 100;
+
+
+            pointer-events: none;
+
+
+        }
+
+
+        .scroll-btn {
+
+
+            opacity: 0;
+
+
+            transform: translateY(10px);
+
+
+            transition: opacity 0.3s ease, transform 0.3s ease;
+
+
+            pointer-events: auto;
+
+
+            background: var(--surface);
+
+
+        }
+
+
+        .scroll-btn.show {
+
+
+            opacity: 1;
+
+
+            transform: translateY(0);
+
+
+        }
+
+
+        .scroll-btn.hide {
+
+
+            opacity: 0;
+
+
+            transform: translateY(10px);
+
+
+        }
+
+
+        #scroll-to-top-btn.hide {
+
+
+            transform: translateY(-10px);
+
+
+        }
+
+
+
+        /* --- Floating Speaker Button --- */
+
+
+        #floating-speaker-button-container {
+
+
+            position: absolute; /* Changed to absolute to be relative to #chat-main-content */
+
+
+            top: 20px; /* Position below header, adjustable */
+
+
+            right: 20px;
+
+
+            z-index: 100;
+
+
+            opacity: 0;
+
+
+            pointer-events: none;
+
+
+            transition: opacity 0.3s ease, transform 0.3s ease;
+
+
+        }
+
+
+        #floating-speaker-button-container.show {
+
+
+            opacity: 1;
+
+
+            pointer-events: auto;
+
+
+        }
+
+
+        #floating-speaker-button-container.is-speaking .speaker-btn {
+
+
+            background: var(--accent);
+
+
+            color: white;
+
+
+            filter: drop-shadow(0 0 8px var(--accent)) drop-shadow(0 0 15px rgba(59, 130, 246, 0.5));
+
+
+        }
+
+
+        .speaker-btn {
+
+
+            width: 45px;
+
+
+            height: 45px;
+
+
+            border-radius: 50%;
+
+
+            background: var(--surface);
+
+
+            border: 1px solid var(--border);
+
+
+            color: var(--text);
+
+
+            display: flex;
+
+
+            align-items: center;
+
+
+            justify-content: center;
+
+
+            cursor: pointer;
+
+
+            transition: all 0.2s, filter 0.5s ease-out;
+
+
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+
+
+        }
+
+
+        .speaker-btn:hover { background: rgba(255,255,255,0.08); }
+
+
+
+
+        /* --- Collapsible Content --- */
+
+
+        .collapsible-content {
+
+
+            overflow: hidden;
+
+
+            transition: max-height 0.3s ease-out;
+
+
+            max-height: 200px;
+
+
+        }
+
+
+        .collapsible-content.expanded {
+
+
+            max-height: none; /* Will be set by JS dynamically */
+
+
+        }
+
+
+        .read-toggle {
+
+
+            display: block;
+
+
+            margin-top: 10px;
+
+
+            color: var(--accent);
+
+
+            cursor: pointer;
+
+
+            font-size: 0.9em;
+
+
+            font-weight: 600;
+
+
+        }
+
+
+
+        /* --- Code Block Styling --- */
+
+
+        .code-block-container {
+
+
+            background: #1e1e1e;
+
+
+            border-radius: 8px;
+
+
+            margin-top: 10px;
+
+
+            margin-bottom: 10px;
+
+
+            overflow: hidden;
+
+
+            position: relative;
+
+
+            border: 1px solid rgba(255,255,255,0.1);
+
+
+            word-break: break-all; /* Ensure long lines break */
+
+
+        }
+
+
+        .code-block-header {
+
+
+            display: flex;
+
+
+            justify-content: space-between;
+
+
+            align-items: center;
+
+
+            padding: 8px 15px;
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+
+
+            color: var(--text-dim);
+
+
+            font-size: 0.8em;
+
+
+            font-weight: 600;
+
+
+        }
+
+
+        .code-language {
+
+
+            text-transform: uppercase;
+
+
+            letter-spacing: 0.5px;
+
+
+        }
+
+
+        .code-body {
+
+    max-width: 100%;
+    overflow-x: auto;
+
+            overflow-x: auto;
+
+
+            padding: 15px;
+
+
+            font-size: 0.9em;
+
+
+            line-height: 1.4;
+
+
+        }
+
+
+        .code-body pre {
+
+
+            margin: 0;
+
+
+            padding: 0;
+
+
+            white-space: pre-wrap; /* Pre-wrap is better for code than break-all */
+
+
+            word-break: break-all;
+
+
+        }
+
+
+        .code-body code {
+
+
+            font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+
+
+            background: transparent;
+
+
+            color: #d4d4d4;
+
+
+        }
+
+
+        .code-copy-btn {
+
+
+            background: rgba(255,255,255,0.1);
+
+
+            border: none;
+
+
+            color: white;
+
+
+            padding: 5px 10px;
+
+
+            border-radius: 5px;
+
+
+            cursor: pointer;
+
+
+            font-size: 0.8em;
+
+
+            transition: background 0.2s;
+
+
+        }
+
+
+        .code-copy-btn:hover { background: var(--accent); }
+
+
+
+        /* General Markdown-like formatting */
+
+
+        .bubble.ai p, .bubble.user p { margin-top: 0.5em; margin-bottom: 0.5em; } /* Added margin-top for consistency */
+
+
+        .bubble.ai p:first-child { margin-top: 0; } /* Remove top margin for first paragraph */
+
+
+        .bubble.ai p:last-child { margin-bottom: 0; } /* Remove bottom margin for last paragraph */
+
+
+
+        .bubble.ai h1, .bubble.ai h2, .bubble.ai h3, .bubble.ai h4 { color: #fff; margin-top: 1em; margin-bottom: 0.5em; line-height: 1.3; }
+
+
+        .bubble.ai h1 { font-size: 1.5em; }
+
+
+        .bubble.ai h2 { font-size: 1.3em; }
+
+
+        .bubble.ai ul, .bubble.ai ol { margin-left: 20px; margin-top: 0.5em; margin-bottom: 0.5em; }
+
+
+        .bubble.ai li { margin-bottom: 0.2em; }
+
+
+        .bubble.ai strong { color: #fff; }
+
+
+        .bubble.ai em { font-style: italic; opacity: 0.8; }
+
+
+        .bubble.ai a { color: var(--accent); text-decoration: none; }
+
+
+        .bubble.ai a:hover { text-decoration: underline; }
+
+
+
+        /* Theming Options */
+
+
+        body.theme-ocean {
+
+
+            --accent: #00bcd4;
+
+
+            --surface: #002e3a;
+
+
+            --bg: #001f29;
+
+
+            --text: #e0f7fa;
+
+
+            --text-dim: #80deea;
+
+
+        }
+
+
+        body.theme-emerald {
+
+
+            --accent: #10b981;
+
+
+            --surface: #064e3b;
+
+
+            --bg: #042f2b;
+
+
+            --text: #ecfdf5;
+
+
+            --text-dim: #6ee7b7;
+
+
+        }
+
+
+
+        /* AI Version indicator */
+
+
+        .ai-version-indicator {
+
+
+            padding: 3px 8px;
+
+
+            background: rgba(255,255,255,0.08);
+
+
+            border-radius: 5px;
+
+
+            font-size: 0.7em;
+
+
+            font-weight: 600;
+
+
+            color: var(--text-dim);
+
+
+            text-transform: capitalize;
+
+
+        }
+
+
+        .ai-version-indicator.pro { background: rgba(59, 130, 246, 0.2); color: var(--accent); }
+
+
+
+        /* Hero prompts */
+
+
+        #hero-prompts {
+
+
+            display: flex;
+
+
+            flex-direction: column;
+
+
+            gap: 10px;
+
+
+            padding: 20px;
+
+
+            align-self: center;
+
+
+            max-width: 600px;
+
+
+            width: 100%;
+
+
+        }
+
+
+        #hero-prompts .hero-prompt-card {
+
+
+            background: rgba(255,255,255,0.05);
+
+
+            border: 1px solid var(--border);
+
+
+            padding: 15px;
+
+
+            border-radius: 10px;
+
+
+            cursor: pointer;
+
+
+            transition: background 0.2s, border-color 0.2s;
+
+
+            text-align: left;
+
+
+            font-size: 0.95em;
+
+
+            line-height: 1.4;
+
+
+            color: var(--text);
+
+
+        }
+
+
+        #hero-prompts .hero-prompt-card:hover {
+
+
+            background: rgba(255,255,255,0.1);
+
+
+            border-color: var(--accent);
+
+
+        }
+
+
+
+        /* Mobile specific adjustments */
+
+
+        @media (max-height: 768px) {
+
+
+            :root {
+
+
+                --header-height: 50px; /* Smaller header on shorter screens */
+
+
+            }
+
+
+            .hero-prompt-card { font-size: 0.8rem; padding: 10px; }
+
+
+            .btn-icon { width: 38px; height: 38px; min-width: 38px;} /* Smaller buttons */
+
+
+        }
+
+
+    </style>
+
+
+</head>
+
+
+<body>
+
+
+
+<div id="overlay"></div>
+
+
+
+<header class="header">
+
+
+    <button id="left-drawer-btn" class="btn-icon" aria-label="Open chat history">
+
+
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+
+
+    </button>
+
+
+    <div class="brand">ELEMENTA</div>
+
+
+    <button id="right-drawer-btn" class="btn-icon" aria-label="Open settings">
+
+
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+
+
+    </button>
+
+
+</header>
+
+
+
+<div id="drawer-left" class="drawer">
+
+
+    <h2>History</h2>
+
+
+    <div class="field">
+
+
+        <label for="history-search-input">Search Sessions</label>
+
+
+        <input type="search" id="history-search-input" placeholder="Filter chats..." aria-label="Search chat history">
+
+
+    </div>
+
+
+    <div id="history-items" class="history-list">
+
+
+        <p style="color: var(--text-dim); text-align: center; font-size: 0.9em;">No sessions yet. Start a chat!</p>
+
+
+    </div>
+
+
+    <button id="new-chat-btn" class="new-chat-btn" aria-label="Start a new chat session">
+
+
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;"><path d="M12 5v14M5 12h14"/></svg>
+
+
+        New Chat
+
+
+    </button>
+
+
+</div>
+
+
+
+<div id="drawer-right" class="drawer">
+
+
+    <h2>Settings</h2>
+
+
+    <div class="field">
+
+
+        <label for="model-select">AI Engine</label>
+
+
+        <select id="model-select">
+
+
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+
+
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+
+
+            <!-- Add more AI models here if available -->
+
+
+        </select>
+
+
+    </div>
+
+
+    <div class="field">
+
+
+        <label for="api-key">Gemini API Key</label>
+
+
+        <input type="password" id="api-key" placeholder="Paste Gemini Key..." autocomplete="off">
+
+
+        <small style="font-size: 0.75em; color: var(--text-dim); margin-top: -5px;">
+
+
+            Note: For production, API keys should be stored server-side.
+
+
+        </small>
+
+
+    </div>
+
+
+    <div class="field">
+
+
+        <label for="font-size-select">Font Size</label>
+
+
+        <select id="font-size-select">
+
+
+            <option value="14px">Small</option>
+
+
+            <option value="16px">Medium</option>
+
+
+            <option value="18px">Large</option>
+
+
+        </select>
+
+
+    </div>
+
+
+    <div class="field">
+
+
+        <label for="theme-select">Theme</label>
+
+
+        <select id="theme-select">
+
+
+            <option value="default">Default</option>
+
+
+            <option value="ocean">Ocean Blue</option>
+
+
+            <option value="emerald">Emerald Green</option>
+
+
+            <!-- Add more themes as desired -->
+
+
+        </select>
+
+
+    </div>
+
+
+    <button id="save-settings-btn" class="save-btn">Apply Changes</button>
+
+
+    <div id="settings-feedback" class="settings-feedback">Settings Saved!</div>
+
+
+</div>
+
+
+
+<main id="chat-main-content">
+
+
+    <div id="chat-flow" aria-live="polite">
+
+
+        <!-- Default welcome message and hero prompts will appear here -->
+
+
+        <!-- Hero prompts area -->
+
+
+        <div id="hero-prompts">
+
+
+            <h3 style="text-align: center; color: var(--text-dim); margin-bottom: 15px;">Popular Prompts:</h3>
+
+
+            <!-- Prompts will be injected here by JS -->
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <div id="floating-speaker-button-container" aria-live="polite">
+
+
+        <button id="speaker-button" class="speaker-btn" aria-label="Toggle speech output" disabled>
+
+
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M22.83 2.17a15 15 0 0 1 0 19.66"></path></svg>
+
+
+        </button>
+
+
+    </div>
+
+
+
+    <div id="chat-scroll-buttons">
+
+
+        <button id="scroll-to-top-btn" class="btn-icon scroll-btn" aria-label="Scroll to top">
+
+
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+
+
+        </button>
+
+
+        <button id="scroll-to-bottom-btn" class="btn-icon scroll-btn" aria-label="Scroll to bottom">
+
+
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+
+
+        </button>
+
+
+    </div>
+
+
+</main>
+
+
+
+<div id="chat-search-container" class="hidden">
+
+
+    <input type="search" id="chat-search-input" placeholder="Find in chat..." aria-label="Search current chat">
+
+
+    <div class="search-controls">
+
+
+        <span id="search-count">0/0</span>
+
+
+        <button id="search-prev-btn" class="btn-icon" aria-label="Previous match" disabled>
+
+
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+
+
+        </button>
+
+
+        <button id="search-next-btn" class="btn-icon" aria-label="Next match" disabled>
+
+
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+
+
+        </button>
+
+
+    </div>
+
+
+</div>
+
+
+
+<div id="suggestion-chips" class="hidden">
+
+
+    <!-- Chips will be appended here by JS -->
+
+
+</div>
+
+
+
+<footer class="footer">
+
+
+    <div class="input-box">
+
+
+        <textarea id="user-input" placeholder="Ask Elementa..." rows="1" aria-label="Type your message"></textarea>
+
+
+        <button id="send-btn" class="btn-icon" style="background: var(--accent); border:none" aria-label="Send message" disabled>
+
+
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+
+
+        </button>
+
+
+    </div>
+
+
+</footer>
+
+
+
+<script>
+
+
+    // --- Constants and Global State ---
+
+
+    const DOM = {
+
+
+        overlay: document.getElementById('overlay'),
+
+
+        leftDrawer: document.getElementById('drawer-left'),
+
+
+        rightDrawer: document.getElementById('drawer-right'),
+
+
+        leftDrawerBtn: document.getElementById('left-drawer-btn'),
+
+
+        rightDrawerBtn: document.getElementById('right-drawer-btn'),
+
+
+        brand: document.querySelector('.brand'),
+
+
+        chatFlow: document.getElementById('chat-flow'),
+
+
+        userInput: document.getElementById('user-input'),
+
+
+        sendBtn: document.getElementById('send-btn'),
+
+
+        modelSelect: document.getElementById('model-select'),
+
+
+        apiKeyInput: document.getElementById('api-key'),
+
+
+        saveSettingsBtn: document.getElementById('save-settings-btn'),
+
+
+        settingsFeedback: document.getElementById('settings-feedback'),
+
+
+        historyItemsContainer: document.getElementById('history-items'),
+
+
+        historySearchInput: document.getElementById('history-search-input'),
+
+
+        newChatBtn: document.getElementById('new-chat-btn'),
+
+
+        chatScrollButtons: document.getElementById('chat-scroll-buttons'),
+
+
+        scrollToTopBtn: document.getElementById('scroll-to-top-btn'),
+
+
+        scrollToBottomBtn: document.getElementById('scroll-to-bottom-btn'),
+
+
+        chatSearchContainer: document.getElementById('chat-search-container'),
+
+
+        chatSearchInput: document.getElementById('chat-search-input'),
+
+
+        searchCount: document.getElementById('search-count'),
+
+
+        searchPrevBtn: document.getElementById('search-prev-btn'),
+
+
+        searchNextBtn: document.getElementById('search-next-btn'),
+
+
+        suggestionChipsContainer: document.getElementById('suggestion-chips'),
+
+
+        heroPromptsContainer: document.getElementById('hero-prompts'),
+
+
+        floatingSpeakerContainer: document.getElementById('floating-speaker-button-container'),
+
+
+        speakerButton: document.getElementById('speaker-button'),
+
+
+        fontSizeSelect: document.getElementById('font-size-select'),
+
+
+        themeSelect: document.getElementById('theme-select'),
+
+
+        footer: document.querySelector('.footer')
+
+
+    };
+
+
+
+    const LOCAL_STORAGE_KEYS = {
+
+
+        API_KEY: 'el_key',
+
+
+        MODEL: 'el_model',
+
+
+        CHAT_HISTORY: 'el_chat_history',
+
+
+        CURRENT_SESSION_ID: 'el_current_session_id',
+
+
+        FONT_SIZE: 'el_font_size',
+
+
+        THEME: 'el_theme'
+
+
+    };
+
+
+
+    const appState = {
+
+
+        apiKey: localStorage.getItem(LOCAL_STORAGE_KEYS.API_KEY) || '',
+
+
+        model: localStorage.getItem(LOCAL_STORAGE_KEYS.MODEL) || 'gemini-1.5-flash',
+
+
+        fontSize: localStorage.getItem(LOCAL_STORAGE_KEYS.FONT_SIZE) || '16px',
+
+
+        theme: localStorage.getItem(LOCAL_STORAGE_KEYS.THEME) || 'default',
+
+
+        isAILoading: false,
+
+
+        activeDrawer: null, // 'left', 'right', or null
+
+
+        chatHistory: JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEYS.CHAT_HISTORY) || '[]'),
+
+
+        currentChatSessionId: localStorage.getItem(LOCAL_STORAGE_KEYS.CURRENT_SESSION_ID) || null,
+
+
+        chatSearch: {
+
+
+            term: '',
+
+
+            matches: [], // Stores DOM elements of matches
+
+
+            originalContent: new WeakMap(), // Store original HTML content of bubbles before highlighting
+
+
+            currentIndex: -1
+
+
+        },
+
+
+        speech: {
+
+
+            synth: window.speechSynthesis,
+
+
+            utterance: null,
+
+
+            isPlaying: false,
+
+
+            currentBubbleElement: null // Keep track of which bubble's text is being spoken
+
+
+        },
+
+
+        hasAIResponse: false // Flag to track if an actual AI response (not 'Thinking...') has been received
+
+
+    };
+
+
+
+    const DEFAULT_BRAND_TITLE = 'ELEMENTA';
+
+
+    const SCROLL_THRESHOLD = 50; // Pixels from bottom/top to hide/show scroll buttons
+
+
+    const COLLAPSE_WORD_COUNT = 150; // Words after which to collapse content
+
+
+
+    // --- Helper Functions ---
+
+
+
+    /**
+
+
+     * Safely escapes HTML to prevent XSS.
+
+
+     * @param {string} str The string to escape.
+
+
+     * @returns {string} The escaped string.
+
+
+     */
+
+
+    function escapeHTML(str) {
+
+
+        if (typeof str !== 'string') return '';
+
+
+        const div = document.createElement('div');
+
+
+        div.appendChild(document.createTextNode(str));
+
+
+        return div.innerHTML;
+
+
+    }
+
+
+
+   /**
+ * Converts a raw AI response (potentially Markdown) into HTML.
+ */
+function formatAIContent(text) {
+    let content = text;
+
+    // 1. Process code blocks: Escape HTML and replace with containers
+    content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+        const language = lang ? lang.trim() : 'plaintext';
+        const escapedCodeForDisplay = escapeHTML(code);
+        return `<!--CODE_BLOCK_START-->
+        <div class="code-block-container">
+            <div class="code-block-header">
+                <span class="code-language">${language}</span>
+                <button class="code-copy-btn" aria-label="Copy code" data-code="${btoa(code)}">Copy</button>
+            </div>
+            <div class="code-body"><pre><code>${escapedCodeForDisplay}</code></pre></div>
+        </div><!--CODE_BLOCK_END-->`;
+    });
+
+    // 2. Apply basic Markdown rules
+    content = content.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    content = content.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    content = content.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+    content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    content = content.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+    // 3. Process paragraphs
+    const lines = content.split('\n');
+    return lines.map(line => {
+        line = line.trim();
+        if (!line) return '';
+        if (line.startsWith('<')) return line; // Already an element
+        return `<p>${escapeHTML(line)}</p>`;
+    }).join('');
+}
+
+
+/**
+
+* Sets the loading state for the AI response.
+
+* Disables/enables input and send button accordingly.
+
+* @param {boolean} isLoading
+
+*/
+
+function setAILoading(isLoading) {
+
+appState.isAILoading = isLoading;
+
+DOM.userInput.disabled = isLoading;
+
+DOM.sendBtn.disabled = isLoading;
+
+DOM.userInput.placeholder = isLoading ? 'Elementa is thinking...' : 'Ask Elementa...';
+
+DOM.chatSearchInput.disabled = isLoading; // Disable search input during AI loading
+
+DOM.suggestionChipsContainer.style.pointerEvents = isLoading ? 'none' : 'auto';
+
+DOM.suggestionChipsContainer.style.opacity = isLoading ? '0.5' : '1';
+
+}
+
+/**
+
+* Manages overlay and body scroll when drawers are active.
+
+*/
+
+function updateDrawerUI() {
+
+if (appState.activeDrawer) {
+
+DOM.overlay.classList.add('show');
+
+document.body.classList.add('no-scroll'); // Prevent body scroll
+
+DOM.brand.innerText = appState.activeDrawer === 'left' ? 'History' : 'Settings';
+
+DOM.brand.classList.add('active-drawer');
+
+} else {
+
+DOM.overlay.classList.remove('show');
+
+// Give transition time for drawers to close before re-enabling scroll
+
+setTimeout(() => {
+
+if (!appState.activeDrawer) {
+
+document.body.classList.remove('no-scroll');
+
+}
+
+}, 400);
+
+DOM.brand.innerText = DEFAULT_BRAND_TITLE;
+
+DOM.brand.classList.remove('active-drawer');
+
+}
+
+}
+
+/**
+
+* Scrolls the chat flow to the bottom.
+
+* @param {boolean} [smooth=true] - Whether to use smooth scrolling.
+
+*/
+
+function scrollToBottom(smooth = true) {
+
+DOM.chatFlow.scrollTo({
+
+top: DOM.chatFlow.scrollHeight,
+
+behavior: smooth ? 'smooth' : 'auto'
+
+});
+
+updateScrollButtonsVisibility();
+
+}
+
+/**
+
+* Scrolls the chat flow to the top.
+
+* @param {boolean} [smooth=true] - Whether to use smooth scrolling.
+
+*/
+
+function scrollToTop(smooth = true) {
+
+DOM.chatFlow.scrollTo({
+
+top: 0,
+
+behavior: smooth ? 'smooth' : 'auto'
+
+});
+
+updateScrollButtonsVisibility();
+
+}
+
+/**
+
+* Updates the visibility of the scroll-to-top and scroll-to-bottom buttons.
+
+*/
+
+function updateScrollButtonsVisibility() {
+
+if (this.scrollTimeout) clearTimeout(this.scrollTimeout);
+
+this.scrollTimeout = setTimeout(() => {
+
+const { scrollTop, clientHeight, scrollHeight } = DOM.chatFlow;
+
+const isAtTop = scrollTop < SCROLL_THRESHOLD;
+
+const isAtBottom = scrollTop + clientHeight >= scrollHeight - SCROLL_THRESHOLD;
+
+const isScrollable = scrollHeight > clientHeight + SCROLL_THRESHOLD;
+
+DOM.scrollToTopBtn.classList.toggle('show', isScrollable && !isAtTop);
+
+DOM.scrollToTopBtn.classList.toggle('hide', !isScrollable || isAtTop);
+
+DOM.scrollToBottomBtn.classList.toggle('show', isScrollable && !isAtBottom);
+
+DOM.scrollToBottomBtn.classList.toggle('hide', !isScrollable || isAtBottom);
+
+DOM.chatScrollButtons.style.pointerEvents = isScrollable ? 'auto' : 'none';
+
+// Floating speaker button: show if chat is scrollable, not at top, speech supported, AND there's an actual AI response
+
+const hasAiBubbleContent = DOM.chatFlow.querySelector('.bubble.ai:not(:has(.typing-indicator))');
+
+DOM.floatingSpeakerContainer.classList.toggle('show', isScrollable && !isAtTop && appState.speech.synth && SpeechSynthesisUtterance && hasAiBubbleContent && appState.hasAIResponse);
+
+}, 100);
+
+}
+
+/**
+
+* Generates a unique ID for chat sessions.
+
+* @returns {string} Unique ID.
+
+*/
+
+function generateUniqueId() {
+
+return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+}
+
+// --- Drawer Functions ---
+
+function toggleDrawer(side) {
+
+const targetDrawer = DOM[`${side}Drawer`];
+
+const isCurrentlyOpen = targetDrawer.classList.contains('active');
+
+const triggerButton = DOM[`${side}DrawerBtn`];
+
+// Store active element to return focus later
+
+const previouslyFocusedElement = document.activeElement;
+
+closeAllDrawers(side); // Close other drawers first
+
+if (!isCurrentlyOpen) {
+
+targetDrawer.classList.add('active');
+
+appState.activeDrawer = side;
+
+updateDrawerUI();
+
+// Focus management: Trap focus inside the drawer
+
+setTimeout(() => {
+
+const focusableElements = targetDrawer.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+
+if (focusableElements.length > 0) {
+
+focusableElements[0].focus();
+
+}
+
+}, 400); // Match drawer transition time
+
+triggerButton.setAttribute('aria-expanded', 'true');
+
+} else {
+
+triggerButton.setAttribute('aria-expanded', 'false');
+
+if (previouslyFocusedElement && previouslyFocusedElement.focus) {
+
+previouslyFocusedElement.focus(); // Return focus to original button
+
+}
+
+}
+
+}
+
+function closeAllDrawers(excludeSide = null) {
+
+let closedADrawer = false;
+
+const previouslyActiveDrawerBtn = appState.activeDrawer === 'left' ? DOM.leftDrawerBtn : (appState.activeDrawer === 'right' ? DOM.rightDrawerBtn : null);
+
+if (DOM.leftDrawer.classList.contains('active') && excludeSide !== 'left') {
+
+DOM.leftDrawer.classList.remove('active');
+
+DOM.leftDrawerBtn.setAttribute('aria-expanded', 'false');
+
+closedADrawer = true;
+
+}
+
+if (DOM.rightDrawer.classList.contains('active') && excludeSide !== 'right') {
+
+DOM.rightDrawer.classList.remove('active');
+
+DOM.rightDrawerBtn.setAttribute('aria-expanded', 'false');
+
+closedADrawer = true;
+
+}
+
+if (closedADrawer || (appState.activeDrawer && !excludeSide)) {
+
+appState.activeDrawer = null;
+
+if (DOM.leftDrawer.classList.contains('active')) appState.activeDrawer = 'left'; // If another drawer was excluded and is still open
+
+if (DOM.rightDrawer.classList.contains('active')) appState.activeDrawer = 'right';
+
+updateDrawerUI();
+
+// Return focus to the button that triggered the last closed drawer, if applicable
+
+if (!appState.activeDrawer && previouslyActiveDrawerBtn && previouslyActiveDrawerBtn.focus) {
+
+previouslyActiveDrawerBtn.focus();
+
+}
+
+}
+
+}
+
+// --- Settings Functions ---
+
+function applyTheme(themeName) {
+
+document.body.className = '';
+
+if (themeName !== 'default') {
+
+document.body.classList.add(`theme-${themeName}`);
+
+}
+
+appState.theme = themeName;
+
+localStorage.setItem(LOCAL_STORAGE_KEYS.THEME, themeName);
+
+}
+
+function applyFontSize(size) {
+
+document.documentElement.style.setProperty('--font-size-base', size);
+
+appState.fontSize = size;
+
+localStorage.setItem(LOCAL_STORAGE_KEYS.FONT_SIZE, size);
+
+}
+
+function saveSettings() {
+
+appState.apiKey = DOM.apiKeyInput.value.trim();
+
+appState.model = DOM.modelSelect.value;
+
+const selectedFontSize = DOM.fontSizeSelect.value;
+
+const selectedTheme = DOM.themeSelect.value;
+
+localStorage.setItem(LOCAL_STORAGE_KEYS.API_KEY, appState.apiKey);
+
+localStorage.setItem(LOCAL_STORAGE_KEYS.MODEL, appState.model);
+
+applyFontSize(selectedFontSize);
+
+applyTheme(selectedTheme);
+
+DOM.settingsFeedback.classList.add('show');
+
+setTimeout(() => DOM.settingsFeedback.classList.remove('show'), 2000);
+
+closeAllDrawers();
+
+updateInputState();
+
+}
+
+function initSettings() {
+
+DOM.apiKeyInput.value = appState.apiKey;
+
+DOM.modelSelect.value = appState.model;
+
+DOM.fontSizeSelect.value = appState.fontSize;
+
+DOM.themeSelect.value = appState.theme;
+
+applyFontSize(appState.fontSize);
+
+applyTheme(appState.theme);
+
+if (!appState.model) {
+
+// Default to flash if none selected
+
+DOM.modelSelect.value = 'gemini-1.5-flash';
+
+appState.model = 'gemini-1.5-flash';
+
+}
+
+}
+
+function updateInputState() {
+
+const hasApiKey = !!appState.apiKey;
+
+DOM.userInput.disabled = !hasApiKey || appState.isAILoading;
+
+DOM.sendBtn.disabled = !hasApiKey || appState.isAILoading || DOM.userInput.value.trim().length === 0;
+
+if (!hasApiKey) {
+
+DOM.userInput.placeholder = "Set your API Key in Settings to start...";
+
+} else if (!appState.isAILoading) {
+
+DOM.userInput.placeholder = "Ask Elementa...";
+
+}
+
+const isChatEmpty = DOM.chatFlow.children.length === 1 && DOM.chatFlow.children[0].id === 'hero-prompts';
+
+const isSearchActive = !!appState.chatSearch.term;
+
+// Show/hide hero prompts only if chat is truly empty and no search is active
+
+DOM.heroPromptsContainer.style.display = (hasApiKey && isChatEmpty && !isSearchActive) ? 'flex' : 'none';
+
+// Show/hide suggestion chips
+
+DOM.suggestionChipsContainer.classList.toggle('hidden', appState.isAILoading || isSearchActive);
+
+updateChatFlowPadding(); // Update padding whenever visibility of these elements changes
+
+}
+
+/**
+
+* Calculates and updates the CSS variable for the total height of the bottom UI elements.
+
+*/
+
+function updateChatFlowPadding() {
+
+// Calculate input bar height
+
+const footerHeight = DOM.footer.offsetHeight;
+
+document.documentElement.style.setProperty('--input-bar-height', `${footerHeight}px`);
+
+// Calculate suggestion chips height
+
+const chipsHeight = DOM.suggestionChipsContainer.classList.contains('hidden') ? 0 : DOM.suggestionChipsContainer.offsetHeight;
+
+document.documentElement.style.setProperty('--suggestion-chips-height', `${chipsHeight}px`);
+
+// Calculate chat search height
+
+const chatSearchHeight = DOM.chatSearchContainer.classList.contains('hidden') ? 0 : DOM.chatSearchContainer.offsetHeight;
+
+document.documentElement.style.setProperty('--chat-search-height', `${chatSearchHeight}px`);
+
+// The CSS variable --total-bottom-ui-height is already set to sum these up.
+
+// We only need to trigger a re-render by updating the root property.
+
+document.documentElement.style.setProperty('--total-bottom-ui-height', `calc(${footerHeight}px + ${chipsHeight}px + ${chatSearchHeight}px)`);
+
+updateScrollButtonsVisibility(); // Re-evaluate scroll button position
+
+}
+
+// --- Chat History Functions ---
+
+function saveChatSession(sessionId, messages, title) {
+
+const existingIndex = appState.chatHistory.findIndex(s => s.id === sessionId);
+
+const sessionData = {
+
+id: sessionId,
+
+title: title || messages[0]?.text?.substring(0, 50) || 'New Chat',
+
+messages: messages,
+
+timestamp: Date.now()
+
+};
+
+if (existingIndex > -1) {
+
+appState.chatHistory[existingIndex] = sessionData;
+
+} else {
+
+appState.chatHistory.unshift(sessionData);
+
+}
+
+localStorage.setItem(LOCAL_STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(appState.chatHistory));
+
+renderHistory();
+
+}
+
+function loadChatSession(sessionId) {
+
+const session = appState.chatHistory.find(s => s.id === sessionId);
+
+if (session) {
+
+appState.currentChatSessionId = sessionId;
+
+localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_SESSION_ID, sessionId);
+
+DOM.chatFlow.innerHTML = '';
+
+// Add hero prompts back for structure, but its display is controlled by updateInputState
+
+DOM.chatFlow.appendChild(DOM.heroPromptsContainer);
+
+appState.hasAIResponse = false; // Reset for new session
+
+session.messages.forEach(msg => {
+
+const bubbleElement = addBubble(msg.text, msg.role, false);
+
+if (msg.role === 'ai' && msg.text !== 'Thinking...') {
+
+appState.hasAIResponse = true;
+
+}
+
+// If bubble was originally collapsed, apply setupCollapsibleContent
+
+// This requires knowing if it was collapsed, or re-evaluating length.
+
+if (msg.role === 'ai' && msg.text !== 'Thinking...') {
+
+// Need to delay setupCollapsibleContent until elements are fully rendered
+
+setTimeout(() => setupCollapsibleContent(bubbleElement), 0);
+
+}
+
+});
+
+scrollToBottom(false);
+
+renderHistory();
+
+closeAllDrawers();
+
+DOM.userInput.focus();
+
+resetChatSearch();
+
+stopSpeech();
+
+updateInputState(); // Ensure hero prompts visibility is correct
+
+}
+
+}
+
+function startNewChat() {
+
+appState.currentChatSessionId = generateUniqueId();
+
+localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_SESSION_ID, appState.currentChatSessionId);
+
+DOM.chatFlow.innerHTML = '';
+
+DOM.chatFlow.appendChild(DOM.heroPromptsContainer); // Add hero prompts back
+
+appState.hasAIResponse = false; // Reset for new session
+
+renderHistory();
+
+closeAllDrawers();
+
+DOM.userInput.focus();
+
+updateScrollButtonsVisibility();
+
+updateInputState(); // Ensure hero prompts visibility is correct for new chat
+
+resetChatSearch();
+
+stopSpeech();
+
+}
+
+function renderHistory(searchTerm = '') {
+
+DOM.historyItemsContainer.innerHTML = '';
+
+const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+const filteredHistory = appState.chatHistory.filter(session =>
+
+session.title.toLowerCase().includes(lowerCaseSearchTerm)
+
+);
+
+if (filteredHistory.length === 0) {
+
+DOM.historyItemsContainer.innerHTML = '<p style="color: var(--text-dim); text-align: center; font-size: 0.9em;">No sessions found.</p>';
+
+return;
+
+}
+
+filteredHistory.forEach(session => {
+
+const item = document.createElement('div');
+
+item.className = `history-item ${session.id === appState.currentChatSessionId ? 'active' : ''}`;
+
+item.dataset.sessionId = session.id;
+
+item.title = session.title;
+
+item.innerText = session.title;
+
+item.addEventListener('click', () => loadChatSession(session.id));
+
+DOM.historyItemsContainer.appendChild(item);
+
+});
+
+}
+
+// --- Chat Search Functions (in-chat) ---
+
+function resetChatSearch() {
+
+appState.chatSearch.term = '';
+
+appState.chatSearch.matches = [];
+
+appState.chatSearch.currentIndex = -1;
+
+DOM.chatSearchInput.value = '';
+
+DOM.chatSearchContainer.classList.add('hidden');
+
+DOM.searchCount.textContent = '0/0';
+
+DOM.searchPrevBtn.disabled = true;
+
+DOM.searchNextBtn.disabled = true;
+
+// Restore original content for all bubbles
+
+DOM.chatFlow.querySelectorAll('.bubble').forEach(bubble => {
+
+if (appState.chatSearch.originalContent.has(bubble)) {
+
+bubble.innerHTML = appState.chatSearch.originalContent.get(bubble);
+
+appState.chatSearch.originalContent.delete(bubble); // Clean up
+
+}
+
+});
+
+updateInputState(); // This will re-evaluate hero prompts and padding
+
+}
+
+function highlightTextNodes(node, searchTerm, regex, matchesArray) {
+
+if (node.nodeType === Node.TEXT_NODE) {
+
+const text = node.nodeValue;
+
+let match;
+
+let lastIndex = 0;
+
+const fragment = document.createDocumentFragment();
+
+let matchesFoundInNode = false;
+
+while ((match = regex.exec(text)) !== null) {
+
+matchesFoundInNode = true;
+
+// Add text before the match
+
+if (match.index > lastIndex) {
+
+fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+
+}
+
+// Add the highlighted span
+
+const span = document.createElement('span');
+
+span.className = 'search-match';
+
+span.textContent = match[0];
+
+fragment.appendChild(span);
+
+matchesArray.push(span);
+
+lastIndex = regex.lastIndex;
+
+}
+
+// Add remaining text after the last match
+
+if (lastIndex < text.length) {
+
+fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+
+}
+
+if (matchesFoundInNode) {
+
+node.parentNode.replaceChild(fragment, node);
+
+}
+
+} else if (node.nodeType === Node.ELEMENT_NODE && node.hasChildNodes() &&
+
+!node.classList.contains('code-block-container') &&
+
+!node.classList.contains('read-toggle') &&
+
+!node.classList.contains('bubble-actions') &&
+
+!node.classList.contains('ai-meta') &&
+
+node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') { // Prevent searching in scripts/styles
+
+// Recursively process child nodes, avoiding specific elements
+
+// Iterate over a copy of childNodes to avoid issues with DOM modifications
+
+Array.from(node.childNodes).forEach(child => highlightTextNodes(child, searchTerm, regex, matchesArray));
+
+}
+
+}
+
+function handleChatSearch() {
+
+const searchTerm = DOM.chatSearchInput.value.trim();
+
+// If search term hasn't changed and we have matches, just navigate
+
+if (searchTerm && searchTerm === appState.chatSearch.term && appState.chatSearch.matches.length > 0) {
+
+if (appState.chatSearch.currentIndex === -1) { // If it was reset, go to first match
+
+appState.chatSearch.currentIndex = 0;
+
+}
+
+navigateToChatMatch(0);
+
+return;
+
+}
+
+// Reset previous search highlights
+
+DOM.chatFlow.querySelectorAll('.bubble').forEach(bubble => {
+
+if (appState.chatSearch.originalContent.has(bubble)) {
+
+bubble.innerHTML = appState.chatSearch.originalContent.get(bubble);
+
+}
+
+});
+
+if (!searchTerm) {
+
+resetChatSearch();
+
+return;
+
+}
+
+appState.chatSearch.term = searchTerm;
+
+appState.chatSearch.matches = [];
+
+appState.chatSearch.currentIndex = -1;
+
+const regex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+
+DOM.chatFlow.querySelectorAll('.bubble').forEach(bubble => {
+
+// Store original content only if not already stored (on first search with this bubble)
+
+if (!appState.chatSearch.originalContent.has(bubble)) {
+
+appState.chatSearch.originalContent.set(bubble, bubble.innerHTML);
+
+}
+
+highlightTextNodes(bubble, searchTerm, regex, appState.chatSearch.matches);
+
+});
+
+DOM.chatSearchContainer.classList.remove('hidden');
+
+DOM.searchPrevBtn.disabled = appState.chatSearch.matches.length <= 1;
+
+DOM.searchNextBtn.disabled = appState.chatSearch.matches.length <= 1;
+
+if (appState.chatSearch.matches.length > 0) {
+
+appState.chatSearch.currentIndex = 0;
+
+navigateToChatMatch(0);
+
+} else {
+
+DOM.searchCount.textContent = '0/0';
+
+}
+
+updateInputState(); // This will re-evaluate hero prompts and padding
+
+}
+
+function navigateToChatMatch(direction) {
+
+if (appState.chatSearch.matches.length === 0) {
+
+DOM.searchCount.textContent = '0/0';
+
+return;
+
+}
+
+const prevMatch = appState.chatSearch.matches[appState.chatSearch.currentIndex];
+
+if (prevMatch) {
+
+prevMatch.classList.remove('current-search-match');
+
+}
+
+appState.chatSearch.currentIndex += direction;
+
+if (appState.chatSearch.currentIndex < 0) {
+
+appState.chatSearch.currentIndex = appState.chatSearch.matches.length - 1;
+
+} else if (appState.chatSearch.currentIndex >= appState.chatSearch.matches.length) {
+
+appState.chatSearch.currentIndex = 0;
+
+}
+
+const currentMatch = appState.chatSearch.matches[appState.chatSearch.currentIndex];
+
+if (currentMatch) {
+
+currentMatch.classList.add('current-search-match');
+
+currentMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+DOM.searchCount.textContent = `${appState.chatSearch.currentIndex + 1}/${appState.chatSearch.matches.length}`;
+
+}
+
+}
+
+// --- Suggestions Chips Functions ---
+
+const heroPromptsList = [
+
+"What are the ethical implications of AI?",
+
+"Explain quantum computing simply.",
+
+"Write a short story about a time-traveling detective.",
+
+"Give me a recipe for vegan lasagna.",
+
+"Summarize the latest breakthroughs in space exploration.",
+
+"How does blockchain technology work?"
+
+];
+
+const dynamicSuggestionsList = [
+
+"Tell me a joke",
+
+"Generate a business idea",
+
+"Write a poem",
+
+"Explain AI safety",
+
+"Debug this code"
+
+];
+
+function renderHeroPrompts() {
+
+DOM.heroPromptsContainer.innerHTML = '<h3 style="text-align: center; color: var(--text-dim); margin-bottom: 15px;">Popular Prompts:</h3>';
+
+heroPromptsList.forEach(prompt => {
+
+const card = document.createElement('button');
+
+card.className = 'hero-prompt-card';
+
+card.textContent = prompt;
+
+card.addEventListener('click', () => {
+
+DOM.userInput.value = prompt;
+
+DOM.userInput.style.height = 'auto'; // Reset height before setting scrollHeight
+
+DOM.userInput.style.height = DOM.userInput.scrollHeight + 'px';
+
+updateInputState();
+
+DOM.userInput.focus();
+
+});
+
+DOM.heroPromptsContainer.appendChild(card);
+
+});
+
+}
+
+function renderSuggestionChips() {
+
+DOM.suggestionChipsContainer.innerHTML = '';
+
+dynamicSuggestionsList.forEach(prompt => {
+
+const chip = document.createElement('button');
+
+chip.className = 'chip';
+
+chip.textContent = prompt;
+
+chip.addEventListener('click', () => {
+
+DOM.userInput.value = prompt;
+
+DOM.userInput.style.height = 'auto'; // Reset height before setting scrollHeight
+
+DOM.userInput.style.height = DOM.userInput.scrollHeight + 'px';
+
+updateInputState();
+
+DOM.userInput.focus();
+
+});
+
+DOM.suggestionChipsContainer.appendChild(chip);
+
+});
+
+updateChatFlowPadding(); // Recalculate padding as chips are now visible
+
+}
+
+// --- Text-to-Speech Functions ---
+
+function speakText(textToSpeak, targetBubbleElement = null) {
+
+if (!appState.speech.synth || !SpeechSynthesisUtterance) {
+
+alert('Speech synthesis is not supported in this browser.');
+
+return;
+
+}
+
+if (appState.speech.utterance) {
+
+appState.speech.synth.cancel();
+
+}
+
+appState.speech.utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+appState.speech.utterance.lang = 'en-US';
+
+appState.speech.utterance.onstart = () => {
+
+appState.speech.isPlaying = true;
+
+appState.speech.currentBubbleElement = targetBubbleElement;
+
+updateSpeakerButtonState();
+
+if (targetBubbleElement) {
+
+targetBubbleElement.querySelector('.speaker-bubble-btn')?.classList.add('speaking');
+
+}
+
+};
+
+appState.speech.utterance.onend = () => {
+
+appState.speech.isPlaying = false;
+
+if (appState.speech.currentBubbleElement) {
+
+appState.speech.currentBubbleElement.querySelector('.speaker-bubble-btn')?.classList.remove('speaking');
+
+}
+
+appState.speech.currentBubbleElement = null;
+
+updateSpeakerButtonState();
+
+};
+
+appState.speech.utterance.onerror = (event) => {
+
+console.error('SpeechSynthesisUtterance.onerror', event);
+
+stopSpeech();
+
+alert('Speech error: ' + event.error);
+
+};
+
+appState.speech.synth.speak(appState.speech.utterance);
+
+}
+
+function stopSpeech() {
+
+if (appState.speech.synth && appState.speech.utterance) {
+
+appState.speech.synth.cancel();
+
+}
+
+if (appState.speech.currentBubbleElement) {
+
+appState.speech.currentBubbleElement.querySelector('.speaker-bubble-btn')?.classList.remove('speaking');
+
+}
+
+appState.speech.isPlaying = false;
+
+appState.speech.currentBubbleElement = null;
+
+updateSpeakerButtonState();
+
+}
+
+function pauseResumeSpeech() {
+
+if (!appState.speech.synth || !appState.speech.isPlaying) return;
+
+if (appState.speech.synth.paused) {
+
+appState.speech.synth.resume();
+
+} else {
+
+appState.speech.synth.pause();
+
+}
+
+updateSpeakerButtonState();
+
+}
+
+function toggleGlobalSpeaker() {
+
+if (appState.speech.isPlaying) {
+
+pauseResumeSpeech();
+
+} else {
+
+// Find the last AI bubble with actual content (not 'Thinking...')
+
+const allAiBubbles = Array.from(DOM.chatFlow.querySelectorAll('.bubble.ai'));
+
+const lastAiBubble = allAiBubbles.filter(b => !b.querySelector('.typing-indicator')).pop();
+
+if (lastAiBubble) {
+
+// Clone the bubble to extract clean text without meta/toggle/actions elements
+
+const tempDiv = document.createElement('div');
+
+tempDiv.innerHTML = lastAiBubble.innerHTML;
+
+tempDiv.querySelector('.ai-meta')?.remove();
+
+tempDiv.querySelector('.bubble-actions')?.remove();
+
+tempDiv.querySelector('.read-toggle')?.remove();
+
+const textContent = tempDiv.innerText.trim();
+
+speakText(textContent, lastAiBubble);
+
+} else {
+
+alert("No AI response to speak yet!");
+
+}
+
+}
+
+}
+
+function updateSpeakerButtonState() {
+
+const globalBtn = DOM.speakerButton;
+
+if (appState.speech.isPlaying) {
+
+DOM.floatingSpeakerContainer.classList.add('is-speaking');
+
+if (appState.speech.synth.paused) {
+
+globalBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M22.83 2.17a15 15 0 0 1 0 19.66"></path></svg>`; // Play icon for resume
+
+globalBtn.title = 'Resume speech';
+
+} else {
+
+globalBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`; // Pause icon
+
+globalBtn.title = 'Pause speech';
+
+}
+
+} else {
+
+DOM.floatingSpeakerContainer.classList.remove('is-speaking');
+
+globalBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M22.83 2.17a15 15 0 0 1 0 19.66"></path></svg>`; // Play icon
+
+globalBtn.title = 'Speak last response';
+
+}
+
+updateScrollButtonsVisibility(); // Re-evaluate floating speaker visibility
+
+}
+
+// --- Collapsible Content Functions ---
+
+function setupCollapsibleContent(bubbleElement) {
+
+// Ensure it's an AI bubble with actual content and not already set up
+
+if (!bubbleElement.classList.contains('ai') || bubbleElement.querySelector('.typing-indicator') || bubbleElement.querySelector('.collapsible-content')) return;
+
+// Temporarily put full content into a hidden div to measure its height accurately
+
+const tempContentHolder = document.createElement('div');
+
+tempContentHolder.style.visibility = 'hidden';
+
+tempContentHolder.style.position = 'absolute';
+
+tempContentHolder.style.whiteSpace = 'pre-wrap';
+
+tempContentHolder.style.width = (bubbleElement.offsetWidth || 500) + 'px'; // Use offsetWidth or a default
+
+tempContentHolder.innerHTML = bubbleElement.innerHTML;
+
+// Remove actions div from temp for accurate content measurement
+
+tempContentHolder.querySelector('.bubble-actions')?.remove();
+
+tempContentHolder.querySelector('.ai-meta')?.remove();
+
+document.body.appendChild(tempContentHolder);
+
+const words = tempContentHolder.innerText.split(/\s+/).filter(word => word.length > 0);
+
+const fullHeight = tempContentHolder.scrollHeight;
+
+document.body.removeChild(tempContentHolder);
+
+// Only collapse if content is sufficiently long
+
+if (words.length > COLLAPSE_WORD_COUNT && fullHeight > 200) { // Also ensure it's visually taller than 200px
+
+const originalHTML = bubbleElement.innerHTML;
+
+// Store original content, potentially overriding search's original content if search is active
+
+appState.chatSearch.originalContent.set(bubbleElement, originalHTML);
+
+const collapsedContentDiv = document.createElement('div');
+
+collapsedContentDiv.className = 'collapsible-content';
+
+collapsedContentDiv.innerHTML = generateCollapsedContent(originalHTML); // Initial collapsed view
+
+const readToggle = document.createElement('span');
+
+readToggle.className = 'read-toggle';
+
+readToggle.textContent = 'Read more';
+
+readToggle.dataset.action = 'expand';
+
+// Find existing actions div to insert before it
+
+const actionsDiv = bubbleElement.querySelector('.bubble-actions');
+
+if (actionsDiv) {
+
+bubbleElement.insertBefore(collapsedContentDiv, actionsDiv);
+
+bubbleElement.insertBefore(readToggle, actionsDiv);
+
+} else {
+
+bubbleElement.appendChild(collapsedContentDiv);
+
+bubbleElement.appendChild(readToggle);
+
+}
+
+readToggle.addEventListener('click', () => {
+
+if (collapsedContentDiv.classList.contains('expanded')) {
+
+collapsedContentDiv.style.maxHeight = `200px`; // Collapse back to default
+
+collapsedContentDiv.classList.remove('expanded');
+
+readToggle.textContent = 'Read more';
+
+readToggle.dataset.action = 'expand';
+
+collapsedContentDiv.innerHTML = generateCollapsedContent(originalHTML); // Restore collapsed view
+
+} else {
+
+collapsedContentDiv.style.maxHeight = `${fullHeight}px`; // Expand to full height
+
+collapsedContentDiv.classList.add('expanded');
+
+readToggle.textContent = 'Read less';
+
+readToggle.dataset.action = 'collapse';
+
+collapsedContentDiv.innerHTML = originalHTML; // Restore full view
+
+}
+
+// Re-apply search highlighting if active
+
+if (appState.chatSearch.term) {
+
+// Temporarily remove search highlights, update content, then re-highlight
+
+bubbleElement.querySelectorAll('.search-match').forEach(el => {
+
+const parent = el.parentNode;
+
+while(el.firstChild) parent.insertBefore(el.firstChild, el);
+
+parent.removeChild(el);
+
+parent.normalize(); // Merge adjacent text nodes
+
+});
+
+// Re-process for search
+
+const regex = new RegExp(appState.chatSearch.term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+
+appState.chatSearch.matches = []; // Clear current matches
+
+highlightTextNodes(bubbleElement, appState.chatSearch.term, regex, appState.chatSearch.matches);
+
+if (appState.chatSearch.matches.length > 0) {
+
+navigateToChatMatch(0); // Go to first match again
+
+}
+
+}
+
+setTimeout(updateScrollButtonsVisibility, 350);
+
+});
+
+// Set the initial content, hiding the original HTML
+
+bubbleElement.innerHTML = '';
+
+// Re-insert the ai-meta and actions div if they exist, then add collapsible content
+
+if (tempContentHolder.querySelector('.ai-meta')) {
+
+bubbleElement.appendChild(tempContentHolder.querySelector('.ai-meta'));
+
+}
+
+bubbleElement.appendChild(collapsedContentDiv);
+
+bubbleElement.appendChild(readToggle);
+
+if (actionsDiv) {
+
+bubbleElement.appendChild(actionsDiv);
+
+}
+
+}
+
+}
+
+/**
+
+* Generates collapsed HTML content from full HTML content by truncating text nodes.
+
+* Preserves HTML structure, avoiding chopping HTML tags.
+
+* @param {string} fullHtml
+
+* @returns {string} Collapsed HTML.
+
+*/
+
+function generateCollapsedContent(fullHtml) {
+
+const tempDiv = document.createElement('div');
+
+tempDiv.innerHTML = fullHtml;
+
+let wordCount = 0;
+
+const targetWordCount = COLLAPSE_WORD_COUNT;
+
+let stopTraversal = false;
+
+let resultElements = [];
+
+function processNode(node) {
+
+if (stopTraversal) return null;
+
+if (node.nodeType === Node.TEXT_NODE) {
+
+const wordsInNode = node.nodeValue.split(/\s+/).filter(word => word.length > 0);
+
+if (wordCount + wordsInNode.length < targetWordCount) {
+
+wordCount += wordsInNode.length;
+
+return node.cloneNode(false);
+
+} else {
+
+const remainingWords = targetWordCount - wordCount;
+
+const truncatedText = wordsInNode.slice(0, remainingWords).join(' ') + '...';
+
+stopTraversal = true;
+
+wordCount = targetWordCount;
+
+return document.createTextNode(truncatedText);
+
+}
+
+} else if (node.nodeType === Node.ELEMENT_NODE) {
+
+// Exclude specific elements from truncation if they should always be visible in their entirety or are controls
+
+if (node.classList.contains('ai-meta') || node.classList.contains('bubble-actions') || node.classList.contains('code-block-container') || node.classList.contains('read-toggle')) {
+
+// If we're already past the word count, don't include these as they are typically at the end.
+
+// But if we're at the beginning, include meta info.
+
+if (wordCount === 0 && node.classList.contains('ai-meta')) return node.cloneNode(true);
+
+return null; // Don't include other controls in collapsed content
+
+}
+
+const clonedElement = node.cloneNode(false);
+
+let hasChildren = false;
+
+Array.from(node.childNodes).forEach(child => {
+
+if (stopTraversal) return;
+
+const processedChild = processNode(child);
+
+if (processedChild) {
+
+clonedElement.appendChild(processedChild);
+
+hasChildren = true;
+
+}
+
+});
+
+// Only return the element if it has children or is a self-closing tag like <br>
+
+if (hasChildren || node.tagName === 'BR' || node.tagName === 'IMG') {
+
+return clonedElement;
+
+}
+
+}
+
+return null;
+
+}
+
+Array.from(tempDiv.childNodes).forEach(child => {
+
+const processedChild = processNode(child);
+
+if (processedChild) {
+
+resultElements.push(processedChild);
+
+}
+
+});
+
+const resultWrapper = document.createElement('div');
+
+resultElements.forEach(el => resultWrapper.appendChild(el));
+
+return resultWrapper.innerHTML;
+
+}
+
+// --- Chat Functions ---
+
+function addBubble(text, role, saveToHistory = true) {
+
+const bubble = document.createElement('div');
+
+bubble.className = `bubble ${role}`;
+
+let bubbleContentHTML = '';
+
+const aiIdentityMeta = `<div class="ai-meta">
+
+<span class="ai-identity">Elementa</span>
+
+<span class="ai-version-indicator ${appState.model.includes('pro') ? 'pro' : ''}">${appState.model.replace('gemini-','').replace('-',' ')}</span>
+
+</div>`;
+
+if (role === 'ai') {
+
+bubbleContentHTML += aiIdentityMeta;
+
+bubbleContentHTML += (text === 'Thinking...')
+
+? `<div class="typing-indicator"><span></span><span></span><span></span></div>`
+
+: formatAIContent(text);
+
+} else {
+
+bubbleContentHTML += `<p>${escapeHTML(text)}</p>`;
+
+}
+
+bubble.innerHTML = bubbleContentHTML;
+
+DOM.chatFlow.appendChild(bubble);
+
+// Add action buttons if not "Thinking..."
+
+if (text !== 'Thinking...') {
+
+const actionsDiv = document.createElement('div');
+
+actionsDiv.className = 'bubble-actions';
+
+if (role === 'ai') {
+
+appState.hasAIResponse = true; // Mark that an AI response has been received
+
+const speakerBtn = document.createElement('button');
+
+speakerBtn.className = 'btn-icon speaker-bubble-btn';
+
+speakerBtn.ariaLabel = 'Speak text';
+
+speakerBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M22.83 2.17a15 15 0 0 1 0 19.66"></path></svg>`;
+
+speakerBtn.addEventListener('click', () => {
+
+const tempDiv = document.createElement('div');
+
+tempDiv.innerHTML = bubble.innerHTML;
+
+tempDiv.querySelector('.ai-meta')?.remove();
+
+tempDiv.querySelector('.bubble-actions')?.remove();
+
+tempDiv.querySelector('.read-toggle')?.remove();
+
+const textContent = tempDiv.innerText.trim();
+
+speakText(textContent, bubble);
+
+});
+
+actionsDiv.appendChild(speakerBtn);
+
+}
+
+actionsDiv.innerHTML += `
+
+<button class="btn-icon reaction-btn" aria-label="React">✨</button>
+
+<button class="btn-icon copy-text-btn" aria-label="Copy text">
+
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+
+</button>
+
+<button class="btn-icon share-btn" aria-label="Share">
+
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+
+</button>
+
+`;
+
+bubble.appendChild(actionsDiv);
+
+actionsDiv.querySelector('.reaction-btn').addEventListener('click', (e) => handleReaction(e.currentTarget));
+
+actionsDiv.querySelector('.copy-text-btn').addEventListener('click', (e) => copyBubbleText(e.currentTarget));
+
+actionsDiv.querySelector('.share-btn').addEventListener('click', (e) => shareBubbleContent(e.currentTarget));
+
+bubble.querySelectorAll('.code-copy-btn').forEach(btn => {
+
+btn.addEventListener('click', (e) => copyCodeBlock(e.currentTarget));
+
+});
+
+// Setup collapsible content after all other content is in place, and only for AI bubbles with actual text
+
+if (role === 'ai' && text !== 'Thinking...') {
+
+setTimeout(() => setupCollapsibleContent(bubble), 0); // Delay to allow full rendering and measurement
+
+}
+
+}
+
+scrollToBottom();
+
+updateScrollButtonsVisibility();
+
+if (saveToHistory && appState.currentChatSessionId) {
+
+let currentMessages = appState.chatHistory.find(s => s.id === appState.currentChatSessionId)?.messages || [];
+
+currentMessages.push({ text, role });
+
+const title = currentMessages[0]?.text?.substring(0, 50) || 'New Chat';
+
+saveChatSession(appState.currentChatSessionId, currentMessages, title);
+
+}
+
+return bubble;
+
+}
+
+/**
+
+* Handles sending a message, interacts with the AI, and displays responses.
+
+*/
+
+async function handleChat() {
+
+const prompt = DOM.userInput.value.trim();
+
+if (!prompt || appState.isAILoading) return;
+
+if (!appState.apiKey) {
+
+alert("Please set your Gemini API Key in Settings first.");
+
+toggleDrawer('right');
+
+return;
+
+}
+
+DOM.userInput.value = '';
+
+DOM.userInput.style.height = 'auto';
+
+updateInputState();
+
+stopSpeech(); // Stop speech when new chat starts
+
+if (!appState.currentChatSessionId) {
+
+startNewChat();
+
+}
+
+addBubble(prompt, 'user');
+
+setAILoading(true);
+
+// Temporarily remove hero prompts until AI is done or if it's the first message
+
+DOM.heroPromptsContainer.style.display = 'none';
+
+const aiBubble = addBubble('Thinking...', 'ai', false); // Initial AI bubble with typing indicator
+
+const currentSessionMessages = appState.chatHistory.find(s => s.id === appState.currentChatSessionId)?.messages || [];
+
+const contextMessages = currentSessionMessages.slice(-10); // Last 10 messages as context
+
+const contents = contextMessages.map(msg => ({ parts: [{ text: msg.text }], role: msg.role === 'user' ? 'user' : 'model' }));
+
+contents.push({ parts: [{ text: prompt }], role: 'user' });
+
+try {
+
+const url = `https://generativelanguage.googleapis.com/v1beta/models/${appState.model}:streamGenerateContent?alt=sse&key=${appState.apiKey}`;
+
+const response = await fetch(url, {
+
+method: 'POST',
+
+headers: { 'Content-Type': 'application/json' },
+
+body: JSON.stringify({ contents: contents })
+
+});
+
+if (!response.ok) {
+
+let errorMsg = `AI API Error: ${response.status} ${response.statusText}`;
+
+try {
+
+const errorData = await response.json();
+
+if (errorData.error && errorData.error.message) {
+
+errorMsg = `AI API Error: ${errorData.error.message}`;
+
+if (errorData.error.message.includes('API key not valid')) {
+
+errorMsg += " Please check your API key in settings.";
+
+} else if (errorData.error.message.includes('quota')) {
+
+errorMsg += " You might have exceeded your API quota.";
+
+}
+
+}
+
+} catch (e) { /* ignore JSON parsing error */ }
+
+throw new Error(errorMsg);
+
+}
+
+const reader = response.body.getReader();
+
+const decoder = new TextDecoder();
+
+let fullText = "";
+
+const aiIdentityMeta = `<div class="ai-meta">
+
+<span class="ai-identity">Elementa</span>
+
+<span class="ai-version-indicator ${appState.model.includes('pro') ? 'pro' : ''}">${appState.model.replace('gemini-','').replace('-',' ')}</span>
+
+</div>`;
+
+while (true) {
+
+const { done, value } = await reader.read();
+
+if (done) break;
+
+const chunk = decoder.decode(value, { stream: true });
+
+const lines = chunk.split("\n");
+
+for (const line of lines) {
+
+if (line.startsWith("data: ")) {
+
+const data = JSON.parse(line.substring(6));
+
+const part = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+if (part) {
+
+if (fullText === "") {
+
+// Replace typing indicator with actual content
+
+aiBubble.innerHTML = aiIdentityMeta + formatAIContent(part);
+// ... inside the stream reader loop ...
+if (part) {
+    fullText += part;
+    // Just update the text content of a dedicated container inside the bubble
+    // instead of re-parsing Markdown during the stream
+    aiBubble.querySelector('.content-body').textContent = fullText; 
+    scrollToBottom();
+}
+
+
+
+} else {
+
+// Append subsequent parts
+
+// Re-rendering the whole bubble on each chunk can be slow for very large responses.
+
+// For simplicity, we'll replace the full innerHTML. For performance, append to text node.
+
+aiBubble.innerHTML = aiIdentityMeta + formatAIContent(fullText + part);
+
+}
+
+fullText += part;
+
+scrollToBottom();
+
+updateScrollButtonsVisibility();
+
+}
+
+}
+
+}
+
+}
+
+// After stream completes, replace with final content and add actions
+
+aiBubble.innerHTML = aiIdentityMeta + formatAIContent(fullText);
+
+appState.hasAIResponse = true; // Confirmed actual AI response
+
+const actionsDiv = document.createElement('div');
+
+actionsDiv.className = 'bubble-actions';
+
+const speakerBtn = document.createElement('button');
+
+speakerBtn.className = 'btn-icon speaker-bubble-btn';
+
+speakerBtn.ariaLabel = 'Speak text';
+
+speakerBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14M22.83 2.17a15 15 0 0 1 0 19.66"></path></svg>`;
+
+speakerBtn.addEventListener('click', () => {
+
+const tempDiv = document.createElement('div');
+
+tempDiv.innerHTML = aiBubble.innerHTML;
+
+tempDiv.querySelector('.ai-meta')?.remove();
+
+tempDiv.querySelector('.bubble-actions')?.remove();
+
+tempDiv.querySelector('.read-toggle')?.remove();
+
+const textContent = tempDiv.innerText.trim();
+
+speakText(textContent, aiBubble);
+
+});
+
+actionsDiv.appendChild(speakerBtn);
+
+actionsDiv.innerHTML += `
+
+<button class="btn-icon reaction-btn" aria-label="React">✨</button>
+
+<button class="btn-icon copy-text-btn" aria-label="Copy text">
+
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+
+</button>
+
+<button class="btn-icon share-btn" aria-label="Share">
+
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+
+</button>
+
+`;
+
+aiBubble.appendChild(actionsDiv);
+
+actionsDiv.querySelector('.reaction-btn').addEventListener('click', (e) => handleReaction(e.currentTarget));
+
+actionsDiv.querySelector('.copy-text-btn').addEventListener('click', (e) => copyBubbleText(e.currentTarget));
+
+actionsDiv.querySelector('.share-btn').addEventListener('click', (e) => shareBubbleContent(e.currentTarget));
+
+aiBubble.querySelectorAll('.code-copy-btn').forEach(btn => {
+
+btn.addEventListener('click', (e) => copyCodeBlock(e.currentTarget));
+
+});
+
+// Delay setupCollapsibleContent until the DOM is fully rendered to measure accurately
+
+setTimeout(() => setupCollapsibleContent(aiBubble), 0);
+
+// Save final AI response to history
+
+const messagesAfterAI = appState.chatHistory.find(s => s.id === appState.currentChatSessionId)?.messages || [];
+
+messagesAfterAI.push({ text: fullText, role: 'ai' });
+
+const title = messagesAfterAI[0]?.text?.substring(0, 50) || 'New Chat';
+
+saveChatSession(appState.currentChatSessionId, messagesAfterAI, title);
+
+} catch (err) {
+
+console.error("Chat error:", err);
+
+aiBubble.innerHTML = aiIdentityMeta + `<p>Error: ${escapeHTML(err.message || 'Could not communicate with AI.')}</p>`;
+
+appState.hasAIResponse = false; // Error means no valid AI response
+
+} finally {
+
+setAILoading(false);
+
+updateInputState();
+
+updateScrollButtonsVisibility();
+
+}
+
+}
+
+// --- Bubble Action Handlers ---
+
+function handleReaction(button) {
+
+const reactions = ['✨', '👍', '❤️', '🤔', '😂', '👎'];
+
+let currentReaction = button.textContent;
+
+let nextIndex = (reactions.indexOf(currentReaction) + 1) % reactions.length;
+
+button.textContent = reactions[nextIndex];
+
+console.log('Reaction:', button.textContent);
+
+}
+
+async function copyBubbleText(button) {
+
+const bubble = button.closest('.bubble');
+
+const tempDiv = document.createElement('div');
+
+tempDiv.innerHTML = bubble.innerHTML;
+
+tempDiv.querySelector('.ai-meta')?.remove();
+
+tempDiv.querySelector('.bubble-actions')?.remove();
+
+tempDiv.querySelector('.read-toggle')?.remove();
+
+const textToCopy = tempDiv.innerText.trim();
+
+if (textToCopy) {
+
+try {
+
+await navigator.clipboard.writeText(textToCopy);
+
+button.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+setTimeout(() => {
+
+button.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+
+}, 1500);
+
+} catch (err) {
+
+console.error('Failed to copy: ', err);
+
+alert('Failed to copy text.');
+
+}
+
+}
+
+}
+
+async function copyCodeBlock(button) {
+
+const encodedCode = button.dataset.code;
+
+if (encodedCode) {
+
+try {
+
+const decodedCode = atob(encodedCode);
+
+await navigator.clipboard.writeText(decodedCode);
+
+button.textContent = 'Copied!';
+
+setTimeout(() => {
+
+button.textContent = 'Copy';
+
+}, 1500);
+
+} catch (err) {
+
+console.error('Failed to copy code: ', err);
+
+alert('Failed to copy code.');
+
+}
+
+}
+
+}
+
+function shareBubbleContent(button) {
+
+const bubble = button.closest('.bubble');
+
+const tempDiv = document.createElement('div');
+
+tempDiv.innerHTML = bubble.innerHTML;
+
+tempDiv.querySelector('.ai-meta')?.remove();
+
+tempDiv.querySelector('.bubble-actions')?.remove();
+
+tempDiv.querySelector('.read-toggle')?.remove();
+
+const textToShare = tempDiv.innerText.trim();
+
+if (navigator.share) {
+
+navigator.share({
+
+title: 'Elementa Chat',
+
+text: textToShare,
+
+url: window.location.href,
+
+})
+
+.then(() => console.log('Shared successfully'))
+
+.catch((error) => console.error('Error sharing:', error));
+
+} else {
+
+alert('Web Share API is not supported in this browser. You can manually copy the text.');
+
+copyBubbleText(button.closest('.bubble-actions').querySelector('.copy-text-btn'));
+
+}
+
+}
+
+// --- Initialization and Event Listeners ---
+
+function initializeApp() {
+
+initSettings();
+
+// Render hero prompts and suggestion chips once at startup
+
+renderHeroPrompts();
+
+renderSuggestionChips();
+
+// Initialize chat history and render hero prompts/suggestion chips
+
+if (!appState.currentChatSessionId || !appState.chatHistory.some(s => s.id === appState.currentChatSessionId)) {
+
+startNewChat();
+
+} else {
+
+loadChatSession(appState.currentChatSessionId);
+
+}
+
+renderHistory();
+
+updateInputState(); // Ensure initial visibility of elements is correct
+
+updateDrawerUI();
+
+updateScrollButtonsVisibility();
+
+updateSpeakerButtonState();
+
+updateChatFlowPadding(); // Initial calculation of padding
+
+// Event Listeners
+
+DOM.overlay.addEventListener('click', closeAllDrawers);
+
+DOM.leftDrawerBtn.addEventListener('click', () => toggleDrawer('left'));
+
+DOM.rightDrawerBtn.addEventListener('click', () => toggleDrawer('right'));
+
+DOM.saveSettingsBtn.addEventListener('click', saveSettings);
+
+DOM.sendBtn.addEventListener('click', handleChat);
+
+DOM.newChatBtn.addEventListener('click', startNewChat);
+
+// History search input (in left drawer)
+
+DOM.historySearchInput.addEventListener('input', (e) => renderHistory(e.target.value));
+
+// Chat search input (above main input)
+
+DOM.chatSearchInput.addEventListener('input', handleChatSearch);
+
+DOM.searchPrevBtn.addEventListener('click', () => navigateToChatMatch(-1));
+
+DOM.searchNextBtn.addEventListener('click', () => navigateToChatMatch(1));
+
+// Scroll buttons
+
+DOM.scrollToTopBtn.addEventListener('click', () => scrollToTop());
+
+DOM.scrollToBottomBtn.addEventListener('click', () => scrollToBottom());
+
+DOM.chatFlow.addEventListener('scroll', updateScrollButtonsVisibility);
+
+// Floating speaker button
+
+DOM.speakerButton.addEventListener('click', toggleGlobalSpeaker);
+
+if (appState.speech.synth && SpeechSynthesisUtterance) {
+
+DOM.speakerButton.disabled = false;
+
+} else {
+
+DOM.speakerButton.title = 'Speech not supported in this browser.';
+
+}
+
+DOM.userInput.addEventListener('input', () => {
+
+DOM.userInput.style.height = 'auto';
+
+DOM.userInput.style.height = DOM.userInput.scrollHeight + 'px';
+
+updateInputState();
+
+updateChatFlowPadding(); // Update padding if textarea height changes
+
+});
+
+DOM.userInput.addEventListener('keydown', (e) => {
+
+if (e.key === 'Enter' && !e.shiftKey) {
+
+e.preventDefault();
+
+DOM.sendBtn.click();
+
+} else if (e.key === 'f' && (e.ctrlKey || e.metaKey)) { // Ctrl+F or Cmd+F
+
+e.preventDefault();
+
+DOM.chatSearchContainer.classList.toggle('hidden');
+
+if (!DOM.chatSearchContainer.classList.contains('hidden')) {
+
+DOM.chatSearchInput.focus();
+
+handleChatSearch();
+
+} else {
+
+resetChatSearch();
+
+}
+
+updateChatFlowPadding(); // Update padding when search container visibility changes
+
+} else if (e.key === 'Escape') {
+
+if (!DOM.chatSearchContainer.classList.contains('hidden')) {
+
+e.preventDefault();
+
+resetChatSearch();
+
+} else {
+
+closeAllDrawers(); // Also close drawers on escape
+
+}
+
+}
+
+});
+
+// Accessibility for drawers
+
+DOM.leftDrawerBtn.setAttribute('aria-haspopup', 'dialog');
+
+DOM.leftDrawerBtn.setAttribute('aria-expanded', 'false');
+
+DOM.rightDrawerBtn.setAttribute('aria-haspopup', 'dialog');
+
+DOM.rightDrawerBtn.setAttribute('aria-expanded', 'false');
+
+}
+
+// Run the app!
+
+initializeApp();
+
+</script>
+
+</body>
+
+</html>
+

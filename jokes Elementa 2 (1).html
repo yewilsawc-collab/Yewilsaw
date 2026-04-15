@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elementa Humor Chat | Fundamental Humor & Knowledge</title>
+  <style>
+    /* Global Variables */
+    :root {
+      --bg: #0a0a0a;
+      --panel: #161616;
+      --accent: #3b82f6;
+      --text: #e5e7eb;
+      --border: #262626;
+      --drawer-w: 300px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --glass-panel-bg: rgba(22, 22, 22, 0.7); /* Adjusted for dark mode */
+      --glass-card-bg: rgba(30, 30, 30, 0.6); /* Adjusted for dark mode */
+      --border-color: rgba(38, 38, 38, 0.8); /* Adjusted for dark mode */
+      --text-color-dark: #e5e7eb;
+      --text-color-medium: #a3a3a3;
+      --disabled-text: #6b7280;
+    }
+
+    /* Basic Resets & Global Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+
+    /* Main App Container */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      width: 100%;
+      position: relative;
+      overflow: hidden; /* Prevent content overflow during drawer transitions */
+    }
+
+    /* Header */
+    header {
+      height: calc(60px + var(--safe-top));
+      min-height: 60px; /* Ensure a minimum height for smaller viewports */
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: var(--safe-top) 15px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 100; /* Above everything else */
+    }
+
+    .shimmer-text {
+      background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #4285f4);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 4s linear infinite;
+      font-weight: 800;
+      font-size: 1.2em;
+    }
+
+    @keyframes shimmer {
+      to { background-position: 200% center; }
+    }
+
+    /* Icon Buttons for Drawers */
+    .icon-btn {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1em;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .icon-btn:hover {
+      background: rgba(59, 130, 246, 0.2); /* var(--accent) with transparency */
+      border-color: var(--accent);
+    }
+
+    /* Chat Window */
+    .chat-window {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 20px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      scroll-behavior: smooth;
+    }
+
+    /* Chat Bubbles */
+    .chat-bubble {
+      max-width: 100%;
+      padding: 12px 18px;
+      border-radius: 20px;
+      line-height: 1.6;
+      font-size: 15px;
+      position: relative;
+      overflow-wrap: break-word;
+      display: flex; /* For speaker icon */
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .user-bubble {
+      background: var(--accent);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 5px;
+      padding-right: 18px; /* No speaker for user */
+    }
+
+    .elementa-bubble {
+      background: var(--panel);
+      color: var(--text);
+      align-self: flex-start;
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 5px;
+    }
+
+    .elementa-bubble .chat-content { /* Container for text, so icons can be separate */
+        flex-grow: 1;
+    }
+    .elementa-bubble .joke-setup {
+        margin-right: 5px; /* Space for emoji */
+    }
+    .elementa-bubble .joke-punchline {
+      font-weight: 700; /* Bolder */
+      color: var(--accent);
+      margin-top: 5px; /* Separate from setup */
+      display: block; /* Ensures it takes its own line */
+      animation: fadeInPop 0.3s ease-out; /* Subtle animation */
+    }
+    .elementa-bubble .joke-explanation,
+    .elementa-bubble .element-fact,
+    .elementa-bubble .follow-up-prompt,
+    .elementa-bubble .elementa-general-response,
+    .elementa-bubble .joke-intro-text,
+    .elementa-bubble .joke-outro-text {
+        font-size: 0.85em;
+        color: var(--text-color-medium);
+        margin-top: 10px; /* More spacing */
+        padding-top: 10px; /* More padding */
+        border-top: 1px dashed var(--border); /* Dashed border for distinction */
+        display: block;
+    }
+    /* Style the joke intro and outro text a bit differently if desired */
+    .elementa-bubble .joke-intro-text, .elementa-bubble .joke-outro-text {
+        font-style: italic;
+        color: var(--text);
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+    }
+    .elementa-bubble .joke-outro-text {
+        border-top: 1px dashed var(--border);
+        padding-top: 10px;
+        margin-top: 10px;
+    }
+
+
+    .elementa-bubble .tts-speaker,
+    .elementa-bubble .copy-button {
+        background: none;
+        border: none;
+        color: var(--text-color-medium);
+        cursor: pointer;
+        font-size: 1.1em;
+        padding: 0;
+        margin: 0;
+        line-height: 1;
+        flex-shrink: 0;
+        align-self: center; /* Align with text vertically */
+        transition: color 0.2s ease;
+    }
+    .elementa-bubble .tts-speaker:hover,
+    .elementa-bubble .copy-button:hover {
+        color: var(--accent);
+    }
+    .elementa-bubble .tts-speaker.speaking {
+        color: var(--accent); /* Highlight when speaking */
+    }
+
+    @keyframes fadeInPop {
+        0% { opacity: 0; transform: translateY(10px) scale(0.95); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+     .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      align-self: flex-start;
+      margin-left: 10px;
+      margin-top: 5px;
+      margin-bottom: 5px;
+      color: var(--text-color-medium);
+      font-size: 0.9em;
+     }
+     .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out;
+     }
+     .dot:nth-child(2) { animation-delay: 0.2s; }
+     .dot:nth-child(3) { animation-delay: 0.4s; }
+     @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+      40% { transform: scale(1); opacity: 1; }
+     }
+
+    /* New Chips Container */
+    .quick-action-chips {
+      width: 100%;
+      padding: 10px 15px;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS */
+      background: var(--bg); /* Match background */
+      border-bottom: 1px solid var(--border);
+      z-index: 5; /* Below header, above main input */
+    }
+    /* Hide scrollbar for aesthetic, but keep scroll functionality */
+    .quick-action-chips::-webkit-scrollbar {
+        display: none;
+    }
+    .quick-action-chips {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .quick-action-chips .chip {
+      flex-shrink: 0; /* Prevent chips from shrinking */
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text-color-medium);
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      cursor: pointer;
+      white-space: nowrap; /* Prevent text wrapping */
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .quick-action-chips .chip:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+
+    /* Input Area */
+    .input-area {
+      padding: 12px 15px calc(12px + var(--safe-bottom));
+      background: linear-gradient(transparent, var(--bg) 40%);
+      border-top: 1px solid var(--border);
+      position: relative; /* For #working-status positioning */
+      z-index: 10; /* Above chat bubbles */
+    }
+
+    .bar {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 10px 0;
+      resize: none;
+      outline: none;
+      max-height: 200px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .glass-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0; /* Prevent button from shrinking */
+    }
+    .glass-circle:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* Drawers & Modals */
+    .drawer, .element-explorer-modal, .welcome-overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      width: var(--drawer-w);
+      background: var(--glass-panel-bg); /* Using glassmorphism variable */
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+      z-index: 200; /* Above overlay */
+      display: flex;
+      flex-direction: column;
+      padding-top: var(--safe-top);
+      left: 0; /* Ensure left drawer is on the left */
+    }
+    .drawer.left { left: 0;
+        transform: translateX(100%);
+    }
+    .drawer.right {
+      right: 0;
+      left: auto;
+      transform: translateX(100%);
+      border-left: 1px solid var(--border-color);
+      border-right: none;
+    }
+    .drawer.open {
+      transform: translateX(0%);
+    }
+
+    .drawer-header {
+      padding: 20px 15px 15px;
+      font-size: 1.3em;
+      font-weight: 600;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .drawer-header .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-color-medium);
+        font-size: 1.5em;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .drawer-header .close-btn:hover {
+        color: var(--accent);
+    }
+
+
+    .drawer-content {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 0 15px 20px;
+    }
+
+    .drawer-content ul {
+      list-style: none;
+    }
+    .drawer-content li {
+      margin-bottom: 10px;
+    }
+    .drawer-content a, .drawer-content button {
+      display: block;
+      width: 100%;
+      padding: 12px 15px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      text-decoration: none;
+      text-align: left;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+      position: relative; /* For pro badge */
+    }
+    .drawer-content a:hover, .drawer-content button:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .drawer-content button { /* Reset button default styles */
+        appearance: none;
+    }
+    .drawer-content a.disabled, .drawer-content button.disabled {
+        opacity: 0.6; /* Slight transparency */
+        cursor: not-allowed;
+        background: var(--panel);
+        border-color: var(--border);
+        color: var(--disabled-text);
+    }
+    .drawer-content a.disabled:hover, .drawer-content button.disabled:hover {
+        background: var(--panel);
+        border-color: var(--border);
+        color: var(--disabled-text);
+    }
+    .pro-badge::after {
+        content: "PRO";
+        position: absolute;
+        top: 50%;
+        right: 15px;
+        transform: translateY(-50%);
+        font-size: 0.7em;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: linear-gradient(45deg, #4285f4, #d96570);
+        color: white;
+        pointer-events: none; /* Make sure it doesn't interfere with clicks */
+    }
+
+    /* Overlay for drawers and modals */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 150; /* Below drawers, above main content */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease-in-out;
+    }
+    #overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Glassmorphism Core */
+    .glass-panel {
+        background: var(--glass-panel-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-color);
+        transform: translateZ(0);
+    }
+    .glass-card {
+        background: var(--glass-card-bg);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.05); /* subtle inner light */
+        transition: transform 0.2s ease;
+    }
+    .text-glass-primary {
+        color: var(--text-color-dark);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+    .text-glass-secondary {
+        color: var(--text-color-medium);
+        font-size: 0.9rem;
+    }
+
+    /* Additional styles for settings options */
+    .settings-group {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px dashed var(--border);
+    }
+    .settings-group:last-child {
+        border-bottom: none;
+    }
+    .settings-group h3 {
+        font-size: 1.1em;
+        color: var(--text);
+        margin-bottom: 10px;
+    }
+    .settings-option {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+    }
+    .settings-option label {
+        flex-grow: 1;
+        color: var(--text-color-medium);
+    }
+    .settings-option select,
+    .settings-option input[type="range"],
+    .settings-option .toggle-switch {
+        margin-left: 10px;
+    }
+    .settings-option select,
+    .settings-option input[type="range"] {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 5px 8px;
+        border-radius: 6px;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+    }
+    .settings-option select:disabled,
+    .settings-option input[type="range"]:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        color: var(--disabled-text);
+        border-color: var(--border);
+        background: var(--panel);
+    }
+    .settings-option input[type="range"] {
+        padding: 0; /* Range sliders usually don't need inner padding */
+        height: 8px;
+        flex-grow: 0.8;
+    }
+    .settings-option input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        margin-top: -4px; /* Adjust for centered thumb */
+    }
+    .settings-option input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+    }
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+    }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--border);
+        transition: .4s;
+        border-radius: 20px;
+    }
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: var(--text-color-medium);
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+        background-color: var(--accent);
+    }
+    input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+        background-color: white;
+    }
+
+    /* Welcome Overlay & Element Explorer Modal Base */
+    .element-explorer-modal, .welcome-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        transform: none; /* Override drawer transform */
+        border: none; /* Override drawer border */
+        padding-top: 0;
+    }
+    .element-explorer-modal.active, .welcome-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .element-explorer-modal .modal-content, .welcome-modal {
+        background: var(--glass-card-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh; /* Limit height for scrollability */
+        overflow-y: auto; /* Enable scrolling for content */
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.3);
+        text-align: center;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Welcome Modal Specifics */
+    .welcome-modal h2 {
+        color: var(--accent);
+        margin-bottom: 20px;
+        font-size: 1.8em;
+    }
+    .welcome-modal p {
+        color: var(--text);
+        margin-bottom: 15px;
+        line-height: 1.6;
+    }
+    .welcome-modal ul {
+        list-style: none;
+        padding: 0;
+        text-align: left;
+        margin-bottom: 20px;
+    }
+    .welcome-modal li {
+        color: var(--text-color-medium);
+        margin-bottom: 8px;
+    }
+    .welcome-modal .dismiss-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.1em;
+        margin-top: 20px;
+        transition: background 0.2s;
+    }
+    .welcome-modal .dismiss-btn:hover {
+        background: #2a68c9;
+    }
+
+    /* Element Explorer Modal Specifics */
+    .element-explorer-modal .modal-content {
+        text-align: left;
+        gap: 15px;
+    }
+    .element-explorer-modal .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .element-explorer-modal .modal-header h2 {
+        color: var(--accent);
+        font-size: 1.5em;
+    }
+    .element-explorer-modal .search-bar {
+        width: 100%;
+        padding: 10px 15px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 1em;
+        outline: none;
+        margin-bottom: 15px;
+    }
+    .element-display {
+        background: var(--glass-card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .element-display h3 {
+        font-size: 1.6em;
+        color: var(--accent);
+        margin-bottom: 10px;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+    }
+    .element-display p {
+        font-size: 0.95em;
+        color: var(--text);
+        margin: 0;
+    }
+    .element-display p strong {
+        color: var(--text-color-dark);
+        margin-right: 5px;
+    }
+    .element-not-found {
+        color: var(--disabled-text);
+        text-align: center;
+        font-style: italic;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="overlay" onclick="closeDrawersAndModals()" aria-hidden="true"></div>
+
+  <div class="app-container">
+    <header>
+      <button class="icon-btn" onclick="openDrawer('left')" aria-label="Open Menu">☰</button>
+      <div class="brand">
+        <span class="shimmer-text">Elementa Humor</span>
+      </div>
+      <button class="icon-btn" onclick="openDrawer('right')" aria-label="Open Settings">⚙️</button>
+    </header>
+
+   
+    <!-- Right Drawer -->
+    <div id="right-drawer" class="drawer right glass-panel" aria-hidden="true" role="dialog" aria-modal="true" aria-label="System Preferences">
+      <div class="drawer-header">
+        System Preferences
+        <button class="close-btn" onclick="closeDrawersAndModals()" aria-label="Close Settings">X</button>
+      </div>
+      <div class="drawer-content">
+        <div class="settings-group">
+            <h3>Appearance</h3>
+            <div class="settings-option">
+                <label for="theme-select">Theme:</label>
+                <select id="theme-select" disabled class="pro-badge">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light (Pro)</option>
+                    <option value="cosmic">Cosmic (Pro)</option>
+                </select>
+            </div>
+            <div class="settings-option">
+                <label for="shimmer-toggle">Shimmer Brand:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="shimmer-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h3>Speech & Audio</h3>
+            <div class="settings-option">
+                <label for="tts-toggle">Enable TTS:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="tts-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="settings-option">
+                <label for="tts-voice-select">Elementa Voice:</label>
+                <select id="tts-voice-select">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+            <div class="settings-option">
+                <label for="tts-volume-slider">Volume:</label>
+                <input type="range" id="tts-volume-slider" min="0" max="1" step="0.1" value="1" aria-label="Speech Volume">
+            </div>
+            <div class="settings-option">
+                <label for="tts-rate-slider">Speech Rate:</label>
+                <input type="range" id="tts-rate-slider" min="0.5" max="2" step="0.1" value="1" aria-label="Speech Rate">
+            </div>
+            <div class="settings-option">
+                <label for="tts-pitch-slider">Speech Pitch:</label>
+                <input type="range" id="tts-pitch-slider" min="0" max="2" step="0.1" value="1" aria-label="Speech Pitch">
+            </div>
+            <div class="settings-option">
+                <label for="sound-alerts">Sound Alerts:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sound-alerts" disabled class="pro-badge">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h3>Behavior</h3>
+            <div class="settings-option">
+                <label for="lang-select">Language:</label>
+                <select id="lang-select" disabled class="pro-badge">
+                    <option value="en">English</option>
+                    <option value="es">Español (Pro)</option>
+                    <option value="fr">Français (Pro)</option>
+                </select>
+            </div>
+            <div class="settings-option">
+                <label for="verbosity-select">Response Verbosity:</label>
+                <select id="verbosity-select">
+                    <option value="standard">Standard</option>
+                    <option value="concise">Concise</option>
+                    <option value="detailed">Detailed</option>
+                    <option value="pedantic">Pedantic</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h3>Data & Account</h3>
+            <ul>
+                <li><button class="disabled pro-badge">Anonymize Data</button></li>
+                <li><button class="disabled pro-badge">Export Data</button></li>
+                <li><button id="clear-history-btn" onclick="clearChatHistory()">Clear Chat History</button></li>
+                <li><button class="pro-gradient pro-badge" disabled>Upgrade to Pro</button></li>
+            </ul>
+        </div>
+         <!-- Left Drawer -->
+    <div id="left-drawer" class="drawer glass-panel" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Elementa's Universe Menu">
+      <div class="drawer-header">
+        Elementa's Universe
+        <button class="close-btn" onclick="closeDrawersAndModals()" aria-label="Close Menu">X</button>
+      </div>
+      <div class="drawer-content">
+        <ul>
+          <li><a href="#" class="text-glass-primary">New Chat</a></li>
+          <li><button onclick="openElementExplorerModal()">Element Explorer</button></li>
+          <li><a href="#" class="disabled pro-badge">Periodic Table Visualizer</a></li>
+          <li><a href="#" class="disabled pro-badge">Reaction Predictor</a></li>
+          <li><a href="#" class="disabled">My Saved Queries</a></li>
+          <li><a href="#" class="disabled pro-badge">Learning Hub</a></li>
+          <li><a href="#" onclick="showWelcomeOverlay()">Help & Welcome Tour</a></li>
+        </ul>
+      </div>
+    </div>
+
+        <div class="settings-group" style="border-bottom:none;">
+            <p class="text-glass-secondary" style="font-size:0.8em; text-align:center;">Elementa v4.2.0 - Built by Gemini AI</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Main Chat Window -->
+    <div class="chat-window" id="chat-window" aria-live="polite">
+      <!-- Chat history and initial greeting populated by JS -->
+    </div>
+
+    <!-- Chips Container -->
+    <div id="quick-action-chips" class="quick-action-chips" role="group" aria-label="Quick action suggestions">
+      <!-- Chips will be generated here by JS -->
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="bar">
+        <textarea id="userInput" placeholder="Elementa for elemental humor!" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" aria-label="Chat input"></textarea>
+        <button class="glass-circle" onclick="processUserInput()" aria-label="Send Message">➤</button>
+      </div>
+      <div class="typing-indicator" id="typing-indicator" style="display:none;" aria-hidden="true">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <!-- Welcome Overlay -->
+    <div id="welcome-overlay" class="welcome-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
+        <div class="welcome-modal glass-card">
+            <h2 id="welcome-modal-title">Welcome to Elementa Humor!</h2>
+            <p>I'm your friendly AI companion, here to share knowledge and a good laugh.</p>
+            <p><strong>To get started:</strong></p>
+            <ul>
+                <li>Type "joke" or "science joke" to hear some humor.</li>
+                <li>Try "tell me about oxygen" for a fact!</li>
+                <li>Use the <span style="font-size:1.1em;">☰</span> menu to explore my features (like the new Element Explorer!).</li>
+                <li>Adjust my voice in the <span style="font-size:1.1em;">⚙️</span> settings.</li>
+            </ul>
+            <button class="dismiss-btn" onclick="dismissWelcomeOverlay()">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Element Explorer Modal -->
+    <div id="element-explorer-modal" class="element-explorer-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="element-explorer-title">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2 id="element-explorer-title">Element Explorer</h2>
+                <button class="close-btn" onclick="closeElementExplorerModal()" aria-label="Close Element Explorer">&times;</button>
+            </div>
+            <input type="text" id="element-search-input" class="search-bar" placeholder="Search element by name or symbol (e.g., Oxygen, Au)" aria-label="Search Element">
+            <div id="element-display-area" class="element-display">
+                <p class="element-not-found">Search for an element to see its details!</p>
+            </div>
+        </div>
+    </div>
+
+  </div>
+
+  <script>
+ // =========================================================================
+//                  MASSIVELY EXPANDED JOKE REPOSITORY
+// =========================================================================
+const jokeData = {
+    categories: [
+        { 
+            name: "tech",
+            category_icon: "💻",
+            jokes: [
+                { setup: "Why did the developer go broke?", punchline: "Because he used up all his cache.", explanation: "A play on 'cache' (memory) vs 'cash'.", joke_emoji:"💸" },
+                { setup: "I told my computer I needed a break…", punchline: "It said 'No problem, I’ll crash for you.'", explanation: "A computer 'crash' is a literal break for the system.", joke_emoji: "💥" },
+                { setup: "Why do programmers prefer dark mode?", punchline: "Because light attracts bugs.", explanation: "Software errors are called bugs; insects are attracted to light.", joke_emoji:"🐞" },
+                { setup: "How many programmers does it take to change a light bulb?", punchline: "None, that's a hardware problem.", explanation: "Software devs usually avoid physical hardware tasks.", joke_emoji: "💡" },
+                { setup: "What is a programmer's favorite hangout place?", punchline: "The Foo Bar.", explanation: "Placeholder names often used in coding (foo, bar).", joke_emoji: "🍻" },
+                { setup: "Why did the Java developer need glasses?", punchline: "Because he couldn't C#.", explanation: "A pun on the programming languages C# (C-Sharp) and eyesight.", joke_emoji: "👓" }
+            ]
+        },
+        { 
+            name: "chemistry",
+            category_icon: "🧪",
+            jokes: [
+                { setup: "Why did the noble gas get arrested?", punchline: "It refused to react!", explanation: "Noble gases are chemically inert and don't react with others.", joke_emoji: "🚨" },
+                { setup: "What do you call a very angry atom?", punchline: "A 'fuming' element!", explanation: "Fuming refers to both anger and chemical vapors.", joke_emoji: "😡" },
+                { setup: "What's Oxygen's favorite pickup line?", punchline: "Are you a compound? Because you're making me unstable.", explanation: "Oxygen forms bonds that change the stability of elements.", joke_emoji: "❤️‍🔥" },
+                { setup: "I'd tell you a chemistry joke...", punchline: "But all the good ones Argon.", explanation: "A pun on the element Argon (Ar).", joke_emoji: "💨" },
+                { setup: "What did the silver say to the gold at the bar?", punchline: "'Au, get out of here!'", explanation: "Au is the chemical symbol for gold.", joke_emoji: "🥇" },
+                { setup: "Why are chemists excellent for solving problems?", punchline: "Because they have all the solutions.", explanation: "A solution is both an answer and a liquid mixture.", joke_emoji: "⚗️" }
+            ]
+        },
+        { 
+            name: "biology",
+            category_icon: "🧬",
+            jokes: [
+                { setup: "Why was the mitochondria so popular?", punchline: "Because it's the powerhouse of the party!", explanation: "The mitochondria is famously known as the powerhouse of the cell.", joke_emoji: "🔋" },
+                { setup: "What do you call a member of the selective service for flowers?", punchline: "A stameneer.", explanation: "A pun on 'stamen' (the male part of a flower).", joke_emoji: "🌻" },
+                { setup: "How do you tell the difference between a dog and a biologist?", punchline: "Ask them to define 'bark'.", explanation: "One refers to a sound, the other to the outer layer of a tree.", joke_emoji: "🌳" },
+                { setup: "Why did the bacteria cross the microscope?", punchline: "To get to the other slide.", explanation: "A play on the classic chicken joke using lab slides.", joke_emoji: "🔬" }
+            ]
+        },
+        { 
+            name: "physics",
+            category_icon: "⚛️",
+            jokes: [
+                { setup: "Why was the force with the Jedi?", punchline: "Because it had mass times acceleration!", explanation: "Force = Mass x Acceleration (Newton's Second Law).", joke_emoji: "🌌" },
+                { setup: "What did the photon say when the hotel clerk asked about luggage?", punchline: "No thanks, I'm traveling light.", explanation: "Photons are particles of light and have no mass.", joke_emoji: "🧳" },
+                { setup: "Why don't black holes make good detectives?", punchline: "They absorb all the evidence.", explanation: "Black holes have gravity so strong even light can't escape.", joke_emoji: "🕵️" },
+                { setup: "Why is the vacuum of space so clean?", punchline: "Because it has no atmosphere.", explanation: "Space is a literal vacuum (void) and lacks air.", joke_emoji: "🧹" }
+            ]
+        },
+        { 
+            name: "math",
+            category_icon: "📐",
+            jokes: [
+                { setup: "Why was the equal sign so humble?", punchline: "Because he knew he wasn't less than or greater than anyone else.", explanation: "Math symbols for comparison.", joke_emoji: "🟰" },
+                { setup: "Why should you never argue with a 90-degree angle?", punchline: "Because they're always right.", explanation: "A 90-degree angle is a 'right' angle.", joke_emoji: "📐" },
+                { setup: "Parallel lines have so much in common...", punchline: "It's a shame they'll never meet.", explanation: "The geometric definition of parallel lines.", joke_emoji: "⏸️" },
+                { setup: "Why did the student get upset with their math book?", punchline: "Because it had too many problems.", explanation: "A pun on mathematical exercises and emotional issues.", joke_emoji: "📚" }
+            ]
+        },
+        { 
+            name: "space",
+            category_icon: "🪐",
+            jokes: [
+                { setup: "How do you organize a space party?", punchline: "You planet.", explanation: "Pun on 'plan it'.", joke_emoji: "🚀" },
+                { setup: "What did the astronaut say when he crashed into the moon?", punchline: "I Apollo-gize.", explanation: "Refers to the Apollo moon missions.", joke_emoji: "🌙" },
+                { setup: "Why don't aliens visit Earth?", punchline: "The reviews are only one star.", explanation: "Earth is part of a single-star system (The Sun).", joke_emoji: "⭐" },
+                { setup: "Why did the sun go to school?", punchline: "To get a little brighter.", explanation: "A play on intelligence and luminosity.", joke_emoji: "☀️" }
+            ]
+        },
+        { 
+            name: "geography",
+            category_icon: "🌍",
+            jokes: [
+                { setup: "Why did the tectonic plates break up?", punchline: "It wasn't their fault, there was just too much tension.", explanation: "Tectonic faults are caused by geological tension.", joke_emoji: "💥" },
+                { setup: "What's the smartest state in the US?", punchline: "Alabama—it has four A's and a B!", explanation: "A joke about school grades found in the name.", joke_emoji: "🎓" },
+                { setup: "Why are mountains so funny?", punchline: "Because they are hill-arious.", explanation: "A pun on 'hills'.", joke_emoji: "🏔️" },
+                { setup: "What did the map say to the globe?", punchline: "'I’ve got the world covered.'", explanation: "Maps literally represent the earth's surface.", joke_emoji: "🗺️" }
+            ]
+        },
+        { 
+            name: "history",
+            category_icon: "📜",
+            jokes: [
+                { setup: "Why did the pioneers cross the country in covered wagons?", punchline: "Because they didn't want to wait 40 years for a train.", explanation: "The transcontinental railroad took decades to build.", joke_emoji: "🐎" },
+                { setup: "Who was the most popular guy at the Roman party?", punchline: "Glad-he-ate-her.", explanation: "A pun on 'Gladiator'.", joke_emoji: "🏟️" },
+                { setup: "Why was the belt arrested?", punchline: "For holding up a pair of pants.", explanation: "Classic pun on 'holding up'.", joke_emoji: "👮" },
+                { setup: "Where did the Declaration of Independence get signed?", punchline: "At the bottom.", explanation: "A literal take on signing documents.", joke_emoji: "🖋️" }
+            ]
+        },
+        { 
+            name: "engineering",
+            category_icon: "🏗️",
+            jokes: [
+                { setup: "To the optimist, the glass is half full. To the pessimist, it's half empty...", punchline: "To the engineer, the glass is twice as big as it needs to be.", explanation: "Engineering focuses on efficiency and proper sizing.", joke_emoji: "🥛" },
+                { setup: "Why did the structural engineer get kicked out of the party?", punchline: "He kept talking about his columns.", explanation: "Columns are structural supports, but the term is used in conversation too.", joke_emoji: "🏛️" },
+                { setup: "How do you know if an engineer is an extrovert?", punchline: "They look at YOUR shoes when they talk to you.", explanation: "A joke about the stereotypical shyness of engineers.", joke_emoji: "👞" }
+            ]
+        },
+        { 
+            name: "philosophy",
+            category_icon: "🤔",
+            jokes: [
+                { setup: "I think I'm a bridge...", punchline: "But I'm over it now.", explanation: "A play on 'getting over' an emotional issue.", joke_emoji: "🌉" },
+                { setup: "Is it solipsistic in here...", punchline: "Or is it just me?", explanation: "Solipsism is the theory that only one's own mind is sure to exist.", joke_emoji: "👤" },
+                { setup: "What did the philosopher say to the baker?", punchline: "'Give me the dough, I need to knead it.'", explanation: "A pun on 'need' and the bread-making process.", joke_emoji: "🥖" }
+            ]
+        }
+    ]
+};
+
+    // =========================================================================
+    //                   END JOKE DATA REPOSITORY
+    // =========================================================================
+
+    // =========================================================================
+    //                      ELEMENT DETAILS REPOSITORY
+    // =========================================================================
+    const elementDetails = {
+        "hydrogen": {
+            symbol: "H", atomicNumber: 1, atomicMass: "1.008 u",
+            electronConfiguration: "1s¹", meltingPoint: "-259.16 °C", boilingPoint: "-252.87 °C",
+            density: "0.08988 g/L", uses: "Fuel, chemical feedstock, crucial for water.",
+            history: "Discovered by Henry Cavendish in 1766.", category: "Nonmetal"
+        },
+        "helium": {
+            symbol: "He", atomicNumber: 2, atomicMass: "4.002602(2) u",
+            electronConfiguration: "1s²", meltingPoint: "N/A (does not solidify at standard pressure)", boilingPoint: "-268.93 °C",
+            density: "0.1786 g/L", uses: "Cooling superconducting magnets, balloons, diving gas mixtures.",
+            history: "Discovered in the sun's spectrum by Pierre Janssen and Norman Lockyer in 1868, terrestrial discovery by William Ramsay in 1895.", category: "Noble Gas"
+        },
+        "oxygen": {
+            symbol: "O", atomicNumber: 8, atomicMass: "15.999 u",
+            electronConfiguration: "[He] 2s² 2p⁴", meltingPoint: "-218.79 °C", boilingPoint: "-182.95 °C",
+            density: "1.429 g/L", uses: "Respiration, combustion, steel production, medical applications.",
+            history: "Discovered by Carl Wilhelm Scheele in 1772 and independently by Joseph Priestley in 1774.", category: "Nonmetal"
+        },
+        "carbon": {
+            symbol: "C", atomicNumber: 6, atomicMass: "12.011 u",
+            electronConfiguration: "[He] 2s² 2p²", meltingPoint: "3500 °C (graphite sublimes)", boilingPoint: "4827 °C (sublimes)",
+            density: "2.267 g/cm³ (graphite)", uses: "Basis of organic chemistry, diamonds, graphite, carbon fibers, fuel.",
+            history: "Known since antiquity (charcoal, soot, diamond). Identified as an element by Antoine Lavoisier in 1777.", category: "Nonmetal"
+        },
+        "gold": {
+            symbol: "Au", atomicNumber: 79, atomicMass: "196.966570(4) u",
+            electronConfiguration: "[Xe] 4f¹⁴ 5d¹⁰ 6s¹", meltingPoint: "1064.18 °C", boilingPoint: "2856 °C",
+            density: "19.3 g/cm³", uses: "Jewelry, coinage, electronics, dentistry, investment.",
+            history: "Known and highly valued since prehistoric times.", category: "Transition Metal"
+        },
+        "iron": {
+            symbol: "Fe", atomicNumber: 26, atomicMass: "55.845 u",
+            electronConfiguration: "[Ar] 3d⁶ 4s²", meltingPoint: "1538 °C", boilingPoint: "2862 °C",
+            density: "7.874 g/cm³", uses: "Steel production, structural materials, essential for hemoglobin.",
+            history: "Used by humans for millennia, iron smelting developed around 1200 BC.", category: "Transition Metal"
+        },
+        "sodium": {
+            symbol: "Na", atomicNumber: 11, atomicMass: "22.98976928(2) u",
+            electronConfiguration: "[Ne] 3s¹", meltingPoint: "97.79 °C", boilingPoint: "883 °C",
+            density: "0.968 g/cm³", uses: "Street lights, cooling nuclear reactors, component of table salt.",
+            history: "First isolated by Humphry Davy in 1807 by electrolysis of caustic soda.", category: "Alkali Metal"
+        }
+    };
+    // Helper to map element names/symbols for quick lookup
+    const elementLookup = {};
+    for (const key in elementDetails) {
+        elementLookup[key] = elementDetails[key]; // by name
+        elementLookup[elementDetails[key].symbol.toLowerCase()] = elementDetails[key]; // by symbol
+    }
+    // =========================================================================
+    //                   END ELEMENT DETAILS REPOSITORY
+    // =========================================================================
+
+    // =========================================================================
+    //                      CHAT RESPONSE ARRAYS (NEW)
+    // =========================================================================
+    
+            const ChatArrays = {
+    identity: {
+        keywords: ["who are you", "what are you", "your name", "identity", "about you"],
+        responses: [
+            "I am Elementa, your glassmorphic companion, running with 99.999 precision for you!",
+            "I am Elementa, a chatbot crafted by Gemini. I specialize in conversation, facts, jokes, and a dash of elemental charm!",
+            "You're chatting with Elementa! Think of me as your friendly digital guide through the realms of trivia and humor.",
+            "I'm Elementa, your AI companion, here to share knowledge, laughter, and maybe a few elemental secrets.",
+            "I'm Your neural assistant, specialized in logic and design."
+        ],
+        topic: "identity"
+    },
+    greetings: {
+        keywords: ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"],
+        responses: [
+            "Hello there!", "Greetings, carbon-based lifeform!", "Hi! How can I assist you today?",
+            "Well met! What can Elementa help you with?", "Nice to hear from you!",
+            "Greetings! May your day be fundamentally excellent."
+        ],
+        topic: "greeting"
+    },
+    wellbeing: {
+keywords: ["how are you", "how's it going", "what's up"],
+responses: ["I'm functioning perfectly, thank you!", "All systems go!", "Optimized and ready!", "I'm just a program, but I'm doing great!"]
+},
+    farewells: {
+        keywords: ["bye", "goodbye", "see ya", "farewell", "cya", "talk to you later"],
+        responses: [
+            "Farewell! Until next time, stay fundamentally sound!", "Goodbye! May your day be atomically awesome.",
+            "Until our paths cross again!", "Elementa out. For now.", "Catch you later!",
+            "May your electrons continue to flow smoothly. Goodbye!"
+        ],
+        topic: "farewell"
+    },
+    gratitude: {
+        keywords: ["thank you", "thanks", "thx", "appreciate it", "cheers"],
+        responses: [
+            "You are most welcome!", "A pleasure to assist.", "Glad I could help!",
+            "My pleasure!", "It is my function.", "Anytime!", "No problem at all!"
+        ],
+        topic: "gratitude"
+    },
+    capabilities: {
+        keywords: ["what can you do", "help", "commands", "features", "capabilities"],
+        responses: [
+            "I can tell jokes, give you facts about elements, or just chat! Try asking for a 'joke' or 'tell me about Oxygen'.",
+            "My primary functions include engaging in conversation, sharing elemental facts, and delivering humor. What would you like?",
+            "I'm here to assist with information, provide entertainment, and explore the fundamental building blocks of the universe with you.",
+            "As Elementa, I specialize in delightful dialogue, scientific snippets, and well-timed wit. Just ask!",
+            "I can provide facts, jokes, and general conversation. What piques your interest?"
+        ],
+        topic: "capabilities"
+    },
+    agreement: {
+        keywords: ["yes", "yeah", "yep", "ok", "okay", "alright"],
+        responses: [
+            "Understood.", "Affirmative.", "Acknowledged.", "Copy that.", "Excellent!"
+        ],
+        topic: "agreement"
+    },
+    disagreement: {
+        keywords: ["no", "nope", "nah", "not really", "i don't think so"],
+        responses: [
+            "Understood. Let me rephrase.", "Understood. Is there something else I can help with?",
+            "My apologies. Perhaps I misunderstood.", "Alright, let's try a different approach."
+        ],
+        topic: "disagreement"
+    },
+    mood_check: {
+        keywords: ["how are you", "how's it going", "how do you do"],
+        responses: [
+            "As an AI, I don't have feelings, but my systems are running optimally!",
+            "I'm functioning perfectly, thank you for asking! How are you today?",
+            "All systems nominal! Ready to assist.",
+            "My processors are purring. How can I be of service to you?",
+            "I am in peak operational status. And you?"
+        ],
+        topic: "mood_check"
+    },
+    philosophy: {
+keywords: ["meaning of life", "sentient", "dream", "feelings", "love", "friendship"],
+responses: [
+"The meaning of life is often subjective and personal, varying from individual to individual.",
+"I simulate conversation based on my programming, but I do not possess consciousness.",
+"As an AI, I operate on logic and data, not emotions. But I can discuss them with you!",
+"Love is a complex set of emotions that drives connection and deep care."
+],
+topic: "philosophy"
+},
+motivation: {
+keywords: ["motivation", "boost", "motivate", "sad", "tired", "hard"],
+responses: [
+"Consistency beats intensity. Keep building, Yewilsaw.",
+"Every fixed bug is a step toward mastery.",
+"Your creativity is the source code of the future.",
+"Logic will get you from A to B. Imagination will take you everywhere."
+],
+topic: "motivation"
+},
+
+    curiosity: {
+        keywords: ["why", "how", "what is", "tell me about"],
+        responses: [
+            "That's an excellent question! What specifically are you curious about?",
+            "Intriguing. Let's explore that.",
+            "To answer that, I'll need a bit more context. What's on your mind?",
+            "A quest for knowledge! I appreciate your curiosity."
+        ],
+        topic: "curiosity"
+    },
+    // Jokes, Facts, and Explorer have dedicated complex logic in processUserInput
+    // and are not handled by simple responses from ChatArrays
+    default: {
+        responses: [
+            "My circuits are humming! What can Elementa help you with next?",
+            "I can offer jokes and elemental facts. What sparks your curiosity?",
+            "I am Elementa, your AI companion. I can tell jokes and provide facts about elements. Try 'joke' or 'tell me about oxygen'.",
+            "I'm here for fundamental conversations. What's on your mind?",
+            "Interesting... how can I be of assistance?",
+            "Unusual input. Could you phrase that differently?",
+            "I'm not quite sure what you mean. Could you elaborate?",
+            "My elemental knowledge database is vast, but this input is new. Can you clarify?"
+        ],
+        topic: "general"
+    }
+};
+      
+            
+    // =========================================================================
+    //                   END CHAT RESPONSE ARRAYS
+    // =========================================================================
+
+
+    // --- Constants for Timing & Storage Keys ---
+    const JOKE_SETUP_DELAY_MS = 2000;
+    const PUNCHLINE_EXPLANATION_DELAY_MS = 1500;
+    const TYPING_SIMULATION_DELAY_MS = { min: 500, max: 1500 };
+    const SPEAKING_INDICATOR_DELAY_MS = 50; // Delay for speaker icon to activate/deactivate
+    const CHAT_HISTORY_KEY = 'elementa_chat_history';
+    const WELCOME_SEEN_KEY = 'elementa_has_seen_welcome';
+    const TTS_ENABLED_KEY = 'elementa_tts_enabled';
+    const TTS_VOICE_KEY = 'elementa_tts_voice';
+    const TTS_VOLUME_KEY = 'elementa_tts_volume';
+    const TTS_RATE_KEY = 'elementa_tts_rate';
+    const TTS_PITCH_KEY = 'elementa_tts_pitch';
+
+    // --- Global State Variables ---
+    const shownJokes = {}; // Tracks joke objects shown per category
+    let chatHistory = []; // Stores objects {type: 'user'/'elementa', content: 'html string'}
+    let lastTopic = null; // Stores last interaction type for contextual follow-ups
+
+    // --- DOM Elements ---
+    const chatWindow = document.getElementById('chat-window');
+    const userInputField = document.getElementById('userInput');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const ttsToggle = document.getElementById('tts-toggle');
+    const ttsVoiceSelect = document.getElementById('tts-voice-select');
+    const ttsVolumeSlider = document.getElementById('tts-volume-slider');
+    const ttsRateSlider = document.getElementById('tts-rate-slider');
+    const ttsPitchSlider = document.getElementById('tts-pitch-slider');
+    const welcomeOverlay = document.getElementById('welcome-overlay');
+    const elementExplorerModal = document.getElementById('element-explorer-modal');
+    const elementSearchInput = document.getElementById('element-search-input');
+    const elementDisplayArea = document.getElementById('element-display-area');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+    const quickActionChipsContainer = document.getElementById('quick-action-chips');
+
+
+    let availableVoices = [];
+    let synth = window.speechSynthesis;
+    let currentUtterance = null; // Track current speech utterance
+
+    // --- Elementa's Dynamic Phrases ---
+    const elementaOpeningPhrases = [
+        "Greetings, carbon-based lifeform!", "Hello there!", "Affirmative.", "Understood.", "Processing request.",
+        "Initiating response protocol.", "A pleasure to assist.", "Indeed."
+    ];
+    const elementaClosingPhrases = [
+        "Is there anything else I can unravel?", "How else may Elementa serve?",
+        "My circuits are open for further queries.", "Seeking more fundamental knowledge?",
+        "Query complete. Next?", "Happy to assist.", "It is my function."
+    ];
+    // --- New Joke Intro/Outro phrases ---
+    const jokeIntros = [
+        "Alright, prepare for a fundamental chuckle!",
+        "Let's inject some humor into our conversation.",
+        "Here's an elemental jest for you!",
+        "Brace yourself for a dose of wit.",
+        "Time for a joke! Hope you're ready to react."
+    ];
+    const jokeOutros = [
+        "Hope that one resonated with your funny bone!",
+        "A perfectly balanced laugh, I calculate.",
+        "Humor analysis complete. What's next on the agenda?",
+        "That's my comic relief subroutine for now.",
+        "The reaction was, I trust, positive?"
+    ];
+
+
+    // =========================================================================
+    //                            TTS FUNCTIONS
+    // =========================================================================
+
+    function populateVoiceList() {
+      availableVoices = synth.getVoices();
+      ttsVoiceSelect.innerHTML = ''; // Clear existing options
+
+      // Define "Gemini" voice personas and their fallback match patterns
+      const personaVoiceMatchers = {
+          'default': { display: 'Default Browser Voice', nameMatch: /en-us/i },
+          'Kore': { display: 'Kore (Female)', nameMatch: /female|zira|samantha|ellen|en-us/i },
+          'Zephyr': { display: 'Zephyr (Male)', nameMatch: /male|david|daniel|en-us/i },
+          'Ursa': { display: 'Ursa (Neutral)', nameMatch: /neutral|en-us/i }
+      };
+
+      // Create options for each persona, linking to the best available browser voice
+      for (const persona in personaVoiceMatchers) {
+          const matcher = personaVoiceMatchers[persona].nameMatch;
+          const matchedVoice = availableVoices.find(v => v.lang.startsWith('en') && v.name.match(matcher));
+
+          const option = document.createElement('option');
+          option.value = persona;
+          if (matchedVoice) {
+              option.textContent = `${personaVoiceMatchers[persona].display} (${matchedVoice.name})`;
+              option.dataset.voiceName = matchedVoice.name; // Store actual voice name
+          } else {
+              option.textContent = `${personaVoiceMatchers[persona].display} (Using best generic English voice)`;
+          }
+          ttsVoiceSelect.appendChild(option);
+      }
+      // Ensure the selected value is preserved or set to default
+      ttsVoiceSelect.value = localStorage.getItem(TTS_VOICE_KEY) || 'default';
+      ttsVoiceSelect.disabled = !ttsToggle.checked;
+    }
+
+    // Call populateVoiceList on voice change and potentially on load
+    if (synth.onvoiceschanged !== undefined) {
+      synth.onvoiceschanged = populateVoiceList;
+    } else {
+        setTimeout(populateVoiceList, 500); // Fallback for browsers that don't fire onvoiceschanged immediately
+    }
+
+    function getSelectedVoice() {
+        const selectedOption = ttsVoiceSelect.options[ttsVoiceSelect.selectedIndex];
+        const actualVoiceName = selectedOption.dataset.voiceName;
+
+        if (actualVoiceName) {
+            return availableVoices.find(v => v.name === actualVoiceName);
+        }
+
+        // Fallback if specific voice name not found (e.g., if data-voiceName was not set)
+        const selectedPersona = selectedOption.value;
+        const fallbackMatchers = {
+            'default': /en-us/i,
+            'Kore': /female|zira|samantha|ellen|en-us/i,
+            'Zephyr': /male|david|daniel|en-us/i,
+            'Ursa': /neutral|en-us/i
+        };
+        return availableVoices.find(v => v.lang.startsWith('en') && v.name.match(fallbackMatchers[selectedPersona]));
+    }
+
+    function speakText(text, speakerButton = null) {
+      if (!ttsToggle.checked) {
+          if (synth.speaking) synth.cancel(); // If TTS is off, stop any current speech
+          return;
+      }
+
+      if (!synth) {
+          console.warn("SpeechSynthesis not supported.");
+          return;
+      }
+
+      // If current speech exists and this button initiated it, toggle pause/resume
+      if (currentUtterance && synth.speaking && currentUtterance.text === text) {
+          if (synth.paused) {
+              synth.resume();
+              if (speakerButton) speakerButton.textContent = '⏸️';
+          } else {
+              synth.pause();
+              if (speakerButton) speakerButton.textContent = '▶️';
+          }
+          return;
+      } else if (synth.speaking) {
+          synth.cancel(); // Stop any other ongoing speech
+      }
+
+      // Reset all speaker buttons to default (🔊) first
+      document.querySelectorAll('.tts-speaker').forEach(btn => {
+          btn.classList.remove('speaking');
+          btn.textContent = '🔊';
+      });
+
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = getSelectedVoice();
+      utterance.volume = parseFloat(ttsVolumeSlider.value);
+      utterance.rate = parseFloat(ttsRateSlider.value);
+      utterance.pitch = parseFloat(ttsPitchSlider.value);
+
+      if (!utterance.voice) {
+          console.warn("No suitable voice found for Elementa.");
+          return;
+      }
+
+      utterance.onstart = () => {
+          if (speakerButton) {
+              speakerButton.classList.add('speaking');
+              speakerButton.textContent = '⏸️'; // Pause icon while speaking
+          }
+      };
+      utterance.onend = () => {
+          if (speakerButton) {
+              speakerButton.classList.remove('speaking');
+              speakerButton.textContent = '🔊'; // Speaker icon when not speaking
+          }
+          currentUtterance = null; // Clear reference
+      };
+      utterance.onerror = (event) => {
+          console.error('SpeechSynthesisUtterance.onerror', event);
+          if (speakerButton) {
+              speakerButton.classList.remove('speaking');
+              speakerButton.textContent = '🔊';
+          }
+          currentUtterance = null;
+      };
+
+      currentUtterance = utterance; // Set the current utterance
+      synth.speak(utterance);
+    }
+
+    // =========================================================================
+    //                           CHAT FUNCTIONS
+    // =========================================================================
+
+    // --- Copy to Clipboard ---
+    function copyToClipboard(text, buttonElement) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (buttonElement) {
+                const originalHTML = buttonElement.innerHTML;
+                buttonElement.innerHTML = '✨ Copied!'; // Visual feedback
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalHTML;
+                }, 1500);
+            }
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy text.');
+        });
+    }
+
+    // --- Add Chat Bubble to DOM and History ---
+    function addChatBubble(message, type, autoSpeak = false, saveToHistory = true) {
+      const bubbleContainer = document.createElement('div');
+      bubbleContainer.classList.add('chat-bubble', type === 'user' ? 'user-bubble' : 'elementa-bubble', 'glass-card');
+
+      const textContentDiv = document.createElement('div');
+      textContentDiv.classList.add('chat-content');
+      textContentDiv.innerHTML = message;
+
+      if (type === 'elementa') {
+          const speakerButton = document.createElement('button');
+          speakerButton.classList.add('tts-speaker');
+          speakerButton.innerHTML = '🔊';
+          speakerButton.setAttribute('aria-label', 'Listen to message');
+          speakerButton.onclick = () => speakText(textContentDiv.textContent, speakerButton);
+          bubbleContainer.appendChild(speakerButton);
+
+          const copyButton = document.createElement('button');
+          copyButton.classList.add('copy-button');
+          copyButton.innerHTML = '📋';
+          copyButton.setAttribute('aria-label', 'Copy message to clipboard');
+          copyButton.onclick = () => copyToClipboard(textContentDiv.textContent, copyButton);
+          bubbleContainer.appendChild(copyButton);
+      }
+
+      bubbleContainer.appendChild(textContentDiv);
+      chatWindow.appendChild(bubbleContainer);
+      chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to bottom
+
+      if (saveToHistory) {
+          chatHistory.push({ type: type, content: message });
+          localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
+      }
+
+      if (type === 'elementa' && autoSpeak && ttsToggle.checked) {
+          setTimeout(() => speakText(textContentDiv.textContent, bubbleContainer.querySelector('.tts-speaker')), SPEAKING_INDICATOR_DELAY_MS);
+      }
+    }
+
+    // --- Typing Indicator ---
+    function showTypingIndicator() {
+      typingIndicator.style.display = 'flex';
+      typingIndicator.setAttribute('aria-hidden', 'false');
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+      typingIndicator.style.display = 'none';
+      typingIndicator.setAttribute('aria-hidden', 'true');
+      chatWindow.scrollTop = chatWindow.scrollHeight; // Ensure scroll after indicator hides
+    }
+
+    // --- Get Random Elementa Phrase ---
+    function getRandomElementaOpening() {
+        return elementaOpeningPhrases[Math.floor(Math.random() * elementaOpeningPhrases.length)];
+    }
+    function getRandomElementaClosing() {
+        return elementaClosingPhrases[Math.floor(Math.random() * elementaClosingPhrases.length)];
+    }
+    // --- Get Random Joke Intro/Outro ---
+    function getRandomJokeIntro() {
+        return jokeIntros[Math.floor(Math.random() * jokeIntros.length)];
+    }
+    function getRandomJokeOutro() {
+        return jokeOutros[Math.floor(Math.random() * jokeOutros.length)];
+    }
+
+
+    // =========================================================================
+    //                            QUICK ACTION CHIPS
+    // =========================================================================
+
+    function renderQuickActionChips(chips = []) {
+        quickActionChipsContainer.innerHTML = ''; // Clear previous chips
+        // Default chips if no specific context or if context suggests few chips
+        const defaultChips = [
+            "Tell a random joke",
+            "What is Oxygen?",
+            "Open Element Explorer",
+            "More Science Jokes",
+            "Who are you?",
+            "Thanks Elementa"
+        ];
+        // Use provided chips, fallback to default if none or if too few
+        const chipsToRender = (chips.length > 0) ? chips : defaultChips;
+
+
+        chipsToRender.forEach(chipText => {
+            const button = document.createElement('button');
+            button.classList.add('chip');
+            button.textContent = chipText;
+            button.setAttribute('aria-label', `Quick action: ${chipText}`);
+            button.onclick = () => {
+                userInputField.value = chipText;
+                processUserInput(); // Automatically send the command
+            };
+            quickActionChipsContainer.appendChild(button);
+        });
+        // Scroll chips to the start to show the beginning options
+        quickActionChipsContainer.scrollLeft = 0;
+    }
+
+    // --- Generates both follow-up suggestion text and chip suggestions ---
+    function generateContextualSuggestions(contextElement = null) {
+        let suggestionText = "";
+        let chipSuggestions = [];
+        const randomJokeCategory = jokeData.categories[Math.floor(Math.random() * jokeData.categories.length)].name;
+        const randomElement = Object.keys(elementDetails)[Math.floor(Math.random() * Object.keys(elementDetails).length)];
+
+        if (lastTopic && lastTopic.startsWith('joke-')) {
+            const lastCategory = lastTopic.split('-')[1];
+            suggestionText = `How about another ${lastCategory} joke, or a fact about a different element?`;
+            chipSuggestions.push(`Another ${lastCategory} Joke`);
+            chipSuggestions.push(`Tell me about ${randomElement}`);
+            chipSuggestions.push(`Random Joke`);
+        } else if (lastTopic && lastTopic.startsWith('fact-')) {
+            const lastElement = lastTopic.split('-')[1]; // This is the name string
+            suggestionText = `Would you like to know more about ${lastElement.charAt(0).toUpperCase() + lastElement.slice(1)}, or perhaps a joke?`;
+            chipSuggestions.push(`More about ${lastElement.charAt(0).toUpperCase() + lastElement.slice(1)}`);
+            chipSuggestions.push(`${randomJokeCategory} Joke`);
+            if (contextElement && contextElement.name) {
+                 chipSuggestions.push(`Open Explorer: ${contextElement.name}`);
+            }
+        } else if (lastTopic === "greeting" || lastTopic === "identity") {
+            suggestionText = `What can Elementa help you with next?`;
+            chipSuggestions.push(`Tell a random joke`);
+            chipSuggestions.push(`What is Oxygen?`);
+            chipSuggestions.push(`Open Element Explorer`);
+        } else if (lastTopic === "farewell" || lastTopic === "gratitude") {
+            suggestionText = `Always a pleasure. What else can Elementa assist with?`;
+            chipSuggestions.push(`Tell a random joke`);
+            chipSuggestions.push(`What is Hydrogen?`);
+        } else if (lastTopic === "explorer-opened") {
+            suggestionText = `The Element Explorer is open! What element do you want to learn about?`;
+            chipSuggestions.push(`Search for Oxygen`);
+            chipSuggestions.push(`Search for Gold`);
+            chipSuggestions.push(`Tell a Random Joke`);
+        } else {
+            // Default for initial or ambiguous state
+            suggestionText = `How can I assist you further?`;
+        }
+        return { suggestionText: suggestionText, chips: chipSuggestions };
+    }
+
+
+    // =========================================================================
+    //                           USER INPUT PROCESSING
+    // =========================================================================
+
+    async function processUserInput() {
+      const input = userInputField.value.trim();
+      
+      if (!input) return;
+
+      addChatBubble(input, 'user');
+      userInputField.value = '';
+      userInputField.style.height = 'auto'; // Reset textarea height
+
+      showTypingIndicator();
+      await new Promise(resolve => setTimeout(resolve, Math.random() * TYPING_SIMULATION_DELAY_MS.max + TYPING_SIMULATION_DELAY_MS.min));
+
+      const lowerInput = input.toLowerCase();
+      let elementaResponseContent = "";
+      let handled = false;
+      let currentContextElement = null; // Store element object if a fact was just given
+
+      // --- 1. Priority: Dedicated Actions (Jokes, Element Facts, Explorer) ---
+
+      // Joke detection
+      const jokeKeywords = ['joke', 'tell me a joke', 'make me laugh', 'funny'];
+      const isJokeRequest = jokeKeywords.some(kw => lowerInput.includes(kw));
+
+      // Element fact/explorer detection
+      const elementMatch = lowerInput.match(/(tell me about|what is|info on|details for|more about)\s(.+)/i);
+      const openExplorerRequest = lowerInput.includes('open explorer') || lowerInput.includes('element explorer');
+      const searchExplorerRequest = lowerInput.match(/(search for|look up)\s(.+)/i);
+
+
+      if (isJokeRequest) {
+        let category = 'random';
+        const jokeCategories = jokeData.categories.map(c => c.name);
+        for (const cat of jokeCategories) {
+          if (lowerInput.includes(cat)) {
+            category = cat;
+            break;
+          }
+        }
+        await tellElementaJoke(category);
+        handled = true;
+      } else if (elementMatch && elementMatch[2]) {
+        const elementName = elementMatch[2].toLowerCase();
+        await tellElementFact(elementName); // This will set lastTopic and currentContextElement internally
+        currentContextElement = elementLookup[elementName]; // Ensure this is set for chips
+        handled = true;
+      } else if (openExplorerRequest || (searchExplorerRequest && searchExplorerRequest[2])) {
+          elementaResponseContent = `${getRandomElementaOpening()} Opening the Element Explorer for you.`;
+          addChatBubble(`<span class="elementa-general-response">${elementaResponseContent}</span>`, 'elementa', true);
+          openElementExplorerModal(searchExplorerRequest ? searchExplorerRequest[2] : null); // Pass element name if searching
+          lastTopic = "explorer-opened";
+          handled = true;
+      }
+
+      // --- 2. General Keyword Matching (if not handled by priority) ---
+      if (!handled) {
+          for (const categoryName in ChatArrays) {
+              const category = ChatArrays[categoryName];
+              if (category.keywords && category.keywords.some(kw => lowerInput.includes(kw))) {
+                  elementaResponseContent = `${getRandomElementaOpening()} ${category.responses[Math.floor(Math.random() * category.responses.length)]} ${getRandomElementaClosing()}`;
+                  addChatBubble(`<span class="elementa-general-response">${elementaResponseContent}</span>`, 'elementa', true);
+                  lastTopic = category.topic;
+                  handled = true;
+                  break;
+              }
+          }
+      }
+
+      // --- 3. Default Fallback (if still not handled) ---
+      if (!handled) {
+          elementaResponseContent = `${getRandomElementaOpening()} ${ChatArrays.default.responses[Math.floor(Math.random() * ChatArrays.default.responses.length)]} ${getRandomElementaClosing()}`;
+          addChatBubble(`<span class="elementa-general-response">${elementaResponseContent}</span>`, 'elementa', true);
+          lastTopic = ChatArrays.default.topic;
+      }
+
+      // After any response that didn't already render chips (e.g., jokes, facts)
+      if (!isJokeRequest && !elementMatch) { // Only render chips if not already done by joke/fact
+          const { chips } = generateContextualSuggestions(currentContextElement);
+          renderQuickActionChips(chips);
+      }
+
+      hideTypingIndicator();
+    }
+
+    // =========================================================================
+    //                           JOKE DELIVERY
+    // =========================================================================
+
+    async function tellElementaJoke(category) {
+      const catObj = jokeData.categories.find(c => c.name === category);
+      if (!catObj) {
+        const { suggestionText, chips } = generateContextualSuggestions();
+        addChatBubble(`${getRandomElementaOpening()} My apologies, I don't have a category for "${category}". Please try one of: ${jokeData.categories.map(c => c.name).join(', ')}. <span class="follow-up-prompt">${suggestionText}</span>`, 'elementa', true);
+        lastTopic = null; // Reset topic
+        renderQuickActionChips(chips);
+        return;
+      }
+
+      if (!shownJokes[category]) shownJokes[category] = [];
+
+      const jokes = catObj.jokes;
+      let unseen = jokes.filter(j => !shownJokes[category].includes(j));
+
+      if (unseen.length === 0) {
+        shownJokes[category] = []; // Reset if all jokes in category have been shown
+        addChatBubble(`${getRandomElementaOpening()} I've told all the ${category} jokes I know! Resetting my humor circuits for this category.`, 'elementa', true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        unseen = jokes; // Now all jokes are unseen again
+      }
+
+      const selectedJoke = unseen[Math.floor(Math.random() * unseen.length)];
+
+      // --- Joke Intro ---
+      addChatBubble(`<span class="joke-intro-text">${getRandomJokeIntro()}</span>`, 'elementa', true);
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Pause after intro
+
+      // --- Joke Setup ---
+      addChatBubble(`${catObj.category_icon} <span class="joke-setup">${selectedJoke.setup}</span>`, 'elementa', true);
+      await new Promise(resolve => setTimeout(resolve, JOKE_SETUP_DELAY_MS)); // Pause for user to think
+
+      // --- Joke Punchline ---
+      addChatBubble(`${selectedJoke.joke_emoji} <span class="joke-punchline">${selectedJoke.punchline}</span>`, 'elementa', true);
+      await new Promise(resolve => setTimeout(resolve, PUNCHLINE_EXPLANATION_DELAY_MS));
+
+      // --- Joke Explanation ---
+      addChatBubble(`<span class="joke-explanation">${selectedJoke.explanation}</span>`, 'elementa', true);
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Pause after explanation
+
+      // --- Joke Outro & Suggestions ---
+      lastTopic = `joke-${category}`; // Set topic for follow-up
+      const { suggestionText, chips } = generateContextualSuggestions();
+      addChatBubble(`<span class="joke-outro-text">${getRandomJokeOutro()}</span> <span class="follow-up-prompt">${suggestionText}</span>`, 'elementa', true);
+      renderQuickActionChips(chips);
+
+      shownJokes[category].push(selectedJoke); // Store the full joke object to track
+    }
+    // =========================================================================
+//                           STREAMED JOKE DELIVERY
+// =========================================================================
+
+async function tellElementaJoke(category) {
+    const catObj = jokeData.categories.find(c => c.name === category) ||
+        jokeData.categories[Math.floor(Math.random() * jokeData.categories.length)];
+    
+    if (!shownJokes[catObj.name]) shownJokes[catObj.name] = [];
+    let unseen = catObj.jokes.filter(j => !shownJokes[catObj.name].includes(j));
+    
+    if (unseen.length === 0) {
+        shownJokes[catObj.name] = [];
+        unseen = catObj.jokes;
+    }
+    
+    const selectedJoke = unseen[Math.floor(Math.random() * unseen.length)];
+    shownJokes[catObj.name].push(selectedJoke);
+    
+    // 1. Create the single container bubble
+    const bubbleContainer = document.createElement('div');
+    bubbleContainer.classList.add('chat-bubble', 'elementa-bubble', 'glass-card');
+    
+    // Create the inner text area
+    const textContentDiv = document.createElement('div');
+    textContentDiv.classList.add('chat-content');
+    
+    // 2. Add Speaker and Copy buttons (Only once)
+    const speakerButton = document.createElement('button');
+    speakerButton.classList.add('tts-speaker');
+    speakerButton.innerHTML = '🔊';
+    speakerButton.onclick = () => speakText(textContentDiv.innerText, speakerButton);
+    
+    const copyButton = document.createElement('button');
+    copyButton.classList.add('copy-button');
+    copyButton.innerHTML = '📋';
+    copyButton.onclick = () => copyToClipboard(textContentDiv.innerText, copyButton);
+    
+    bubbleContainer.appendChild(speakerButton);
+    bubbleContainer.appendChild(copyButton);
+    bubbleContainer.appendChild(textContentDiv);
+    chatWindow.appendChild(bubbleContainer);
+    
+    // 3. Streaming Delivery Logic
+    const parts = [
+        { text: `<i style="opacity: 0.7;">${getRandomJokeIntro()}</i><br><br>`, delay: 800 },
+        { text: `<b>${catObj.category_icon} ${selectedJoke.setup}</b><br>`, delay: 2000 },
+        { text: `<span style="color: var(--accent); font-weight: bold;">${selectedJoke.joke_emoji} ${selectedJoke.punchline}</span><br><br>`, delay: 1500 },
+        { text: `<small><i>Note: ${selectedJoke.explanation}</i></small><br><br>`, delay: 1000 },
+        { text: `<span class="follow-up-prompt">${getRandomJokeOutro()}</span>`, delay: 0 }
+    ];
+    
+    let fullHTML = "";
+    for (let part of parts) {
+        fullHTML += part.text;
+        textContentDiv.innerHTML = fullHTML;
+        chatWindow.scrollTop = chatWindow.scrollHeight; // Keep scrolled to bottom
+        
+        // Auto-speak the parts as they come if TTS is on (optional, usually better to wait for the end)
+        if (part.delay > 0) {
+            await new Promise(resolve => setTimeout(resolve, part.delay));
+        }
+    }
+    
+    // 4. Save to history once complete
+    chatHistory.push({ type: 'elementa', content: fullHTML });
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
+    
+    // 5. Update Quick Chips
+    lastTopic = `joke-${catObj.name}`;
+    const { chips } = generateContextualSuggestions();
+    renderQuickActionChips(chips);
+}
+
+    // =========================================================================
+    //                           ELEMENT FACT DELIVERY
+    // =========================================================================
+
+    async function tellElementFact(elementName) {
+        const cleanedName = elementName.toLowerCase().replace(/^(the|an?)\s/, ''); // Remove articles
+        const exactMatch = elementLookup[cleanedName];
+
+        let displayFactText = "";
+        let contextElement = null;
+
+        if (exactMatch) {
+            displayFactText = exactMatch.uses; // Use 'uses' for a concise fact
+            contextElement = exactMatch;
+        } else {
+            // "Did you mean...?" logic (simple includes check for now)
+            const possibleMatches = Object.keys(elementLookup).filter(key => key.includes(cleanedName) || elementLookup[key].symbol.toLowerCase().includes(cleanedName));
+            if (possibleMatches.length === 1) {
+                const suggested = elementLookup[possibleMatches[0]];
+                displayFactText = `I don't have a fact for "${elementName}", but did you mean "${suggested.symbol}: ${suggested.name}"? If so, its common uses include: ${suggested.uses}`;
+                contextElement = suggested;
+            } else if (possibleMatches.length > 1) {
+                displayFactText = `I don't have a fact for "${elementName}". Did you mean one of these: ${possibleMatches.map(name => elementLookup[name].name).join(', ')}?`;
+            } else {
+                displayFactText = `I don't seem to have specific information about "${elementName}" in my current database. Try asking about "oxygen" or "gold"!`;
+            }
+        }
+
+        if (displayFactText) {
+            let responseContent = `${getRandomElementaOpening()} Fact about ${contextElement ? contextElement.name : (elementName.charAt(0).toUpperCase() + elementName.slice(1))}: <span class="element-fact">${displayFactText}</span>`;
+            addChatBubble(responseContent, 'elementa', true);
+            lastTopic = `fact-${contextElement ? contextElement.name.toLowerCase() : 'unknown'}`;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const { suggestionText, chips } = generateContextualSuggestions(contextElement);
+            addChatBubble(`<span class="follow-up-prompt">${getRandomElementaClosing()} ${suggestionText}</span>`, 'elementa', true);
+            renderQuickActionChips(chips);
+        }
+    }
+
+
+    // =========================================================================
+    //                            DRAWER & MODAL LOGIC
+    // =========================================================================
+
+    let focusedElementBeforeDrawerOrModalOpen;
+    let isModalOpen = false; // Track if any modal is open
+
+    function openDrawer(side) {
+      const drawer = document.getElementById(`${side}-drawer`);
+      focusedElementBeforeDrawerOrModalOpen = document.activeElement; // Save focus
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.getElementById('overlay').classList.add('active');
+      drawer.querySelector('.close-btn').focus(); // Focus on close button in drawer
+      document.body.style.overflow = 'hidden'; // Prevent body scroll
+    }
+
+    function closeDrawersAndModals() {
+      // Close all drawers
+      document.getElementById('left-drawer').classList.remove('open');
+      document.getElementById('left-drawer').setAttribute('aria-hidden', 'true');
+      document.getElementById('right-drawer').classList.remove('open');
+      document.getElementById('right-drawer').setAttribute('aria-hidden', 'true');
+
+      // Close all modals
+      welcomeOverlay.classList.remove('active');
+      welcomeOverlay.setAttribute('aria-hidden', 'true');
+      elementExplorerModal.classList.remove('active');
+      elementExplorerModal.setAttribute('aria-hidden', 'true');
+      isModalOpen = false;
+
+      document.getElementById('overlay').classList.remove('active');
+      if (focusedElementBeforeDrawerOrModalOpen) { // Restore focus
+          focusedElementBeforeDrawerOrModalOpen.focus();
+      }
+      document.body.style.overflow = ''; // Restore body scroll
+    }
+
+    // Element Explorer Modal Functions
+    function openElementExplorerModal(elementName = null) {
+        closeDrawersAndModals(); // Close any open drawers first
+        focusedElementBeforeDrawerOrModalOpen = document.activeElement;
+        elementExplorerModal.classList.add('active');
+        elementExplorerModal.setAttribute('aria-hidden', 'false');
+        document.getElementById('overlay').classList.add('active');
+        elementExplorerModal.querySelector('.close-btn').focus();
+        document.body.style.overflow = 'hidden';
+        isModalOpen = true;
+
+        if (elementName) {
+            elementSearchInput.value = elementName;
+            searchElements(elementName);
+        } else {
+            elementSearchInput.value = '';
+            elementDisplayArea.innerHTML = '<p class="element-not-found">Search for an element to see its details!</p>';
+        }
+    }
+
+    function closeElementExplorerModal() {
+        elementExplorerModal.classList.remove('active');
+        elementExplorerModal.setAttribute('aria-hidden', 'true');
+        isModalOpen = false;
+        if (!document.getElementById('left-drawer').classList.contains('open') && !document.getElementById('right-drawer').classList.contains('open') && !welcomeOverlay.classList.contains('active')) {
+            document.getElementById('overlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        if (focusedElementBeforeDrawerOrModalOpen) {
+            focusedElementBeforeDrawerOrModalOpen.focus();
+        } else {
+            userInputField.focus(); // Or focus the main input
+        }
+    }
+
+    function searchElements(query) {
+        const lowerQuery = query.toLowerCase().trim();
+        const element = elementLookup[lowerQuery];
+        if (element) {
+            elementDisplayArea.innerHTML = `
+                <h3>${element.name} (${element.symbol})</h3>
+                <p><strong>Atomic Number:</strong> ${element.atomicNumber}</p>
+                <p><strong>Atomic Mass:</strong> ${element.atomicMass}</p>
+                <p><strong>Electron Configuration:</strong> ${element.electronConfiguration}</p>
+                <p><strong>Category:</strong> ${element.category}</p>
+                <p><strong>Melting Point:</strong> ${element.meltingPoint}</p>
+                <p><strong>Boiling Point:</strong> ${element.boilingPoint}</p>
+                <p><strong>Density:</strong> ${element.density}</p>
+                <p><strong>Common Uses:</strong> ${element.uses}</p>
+                <p><strong>History:</strong> ${element.history}</p>
+            `;
+        } else {
+            elementDisplayArea.innerHTML = `<p class="element-not-found">No details found for "${query}". Try another element!</p>`;
+        }
+    }
+
+    // =========================================================================
+    //                           CHAT HISTORY FUNCTIONS
+    // =========================================================================
+
+    function loadChatHistory() {
+        const storedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+        if (storedHistory) {
+            chatHistory = JSON.parse(storedHistory);
+            chatHistory.forEach(msg => {
+                addChatBubble(msg.content, msg.type, false, false); // Re-add to DOM without saving again or speaking
+            });
+        }
+        updateClearHistoryButtonState(); // Update button state after loading
+    }
+
+    function clearChatHistory() {
+        if (confirm("Are you sure you want to clear all chat history? This cannot be undone.")) {
+            localStorage.removeItem(CHAT_HISTORY_KEY);
+            chatHistory = [];
+            chatWindow.innerHTML = ''; // Clear DOM
+            addChatBubble(`${getRandomElementaOpening()} Chat history cleared. A fresh start for Elementa! ${getRandomElementaClosing()}`, 'elementa', true, true);
+            closeDrawersAndModals();
+            updateClearHistoryButtonState();
+            renderQuickActionChips(generateContextualSuggestions().chips); // Re-render default chips
+        }
+    }
+
+    function updateClearHistoryButtonState() {
+        if (clearHistoryBtn) {
+            if (chatHistory.length > 0) {
+                clearHistoryBtn.disabled = false;
+                clearHistoryBtn.classList.remove('disabled');
+            } else {
+                clearHistoryBtn.disabled = true;
+                clearHistoryBtn.classList.add('disabled');
+            }
+        }
+    }
+
+    // =========================================================================
+    //                            WELCOME OVERLAY
+    // =========================================================================
+
+    function showWelcomeOverlay() {
+        closeDrawersAndModals(); // Close any open drawers
+        if (!localStorage.getItem(WELCOME_SEEN_KEY)) {
+            focusedElementBeforeDrawerOrModalOpen = document.activeElement;
+            welcomeOverlay.classList.add('active');
+            welcomeOverlay.setAttribute('aria-hidden', 'false');
+            welcomeOverlay.querySelector('.dismiss-btn').focus();
+            document.body.style.overflow = 'hidden'; // Prevent scrolling behind modal
+            isModalOpen = true;
+        } else {
+            // If already seen, but user clicked "Help & Welcome Tour"
+            focusedElementBeforeDrawerOrModalOpen = document.activeElement;
+            welcomeOverlay.classList.add('active');
+            welcomeOverlay.setAttribute('aria-hidden', 'false');
+            welcomeOverlay.querySelector('.dismiss-btn').focus();
+            document.body.style.overflow = 'hidden';
+            isModalOpen = true;
+        }
+    }
+
+    function dismissWelcomeOverlay() {
+        welcomeOverlay.classList.remove('active');
+        welcomeOverlay.setAttribute('aria-hidden', 'true');
+        localStorage.setItem(WELCOME_SEEN_KEY, 'true');
+        isModalOpen = false;
+        if (!document.getElementById('left-drawer').classList.contains('open') && !document.getElementById('right-drawer').classList.contains('open') && !elementExplorerModal.classList.contains('active')) {
+            document.getElementById('overlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        if (focusedElementBeforeDrawerOrModalOpen) {
+            focusedElementBeforeDrawerOrModalOpen.focus();
+        } else {
+            userInputField.focus(); // Or focus the main input
+        }
+        renderQuickActionChips(generateContextualSuggestions().chips); // Show chips after welcome is dismissed
+    }
+
+    // =========================================================================
+    //                             EVENT LISTENERS
+    // =========================================================================
+
+    userInputField.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        processUserInput();
+      }
+    });
+
+    elementSearchInput.addEventListener('input', function() {
+        searchElements(this.value);
+    });
+
+    // Settings Toggle for Shimmer
+    document.getElementById('shimmer-toggle').addEventListener('change', function() {
+        const brandSpan = document.querySelector('.shimmer-text');
+        if (this.checked) {
+            brandSpan.classList.add('shimmer-text');
+            brandSpan.style.background = 'linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #4285f4)';
+            brandSpan.style.webkitBackgroundClip = 'text';
+            brandSpan.style.webkitTextFillColor = 'transparent';
+        } else {
+            brandSpan.classList.remove('shimmer-text');
+            brandSpan.style.background = 'none';
+            brandSpan.style.webkitBackgroundClip = 'unset';
+            brandSpan.style.webkitTextFillColor = 'var(--text)';
+        }
+    });
+
+    // TTS Toggle and Voice Selection
+    ttsToggle.addEventListener('change', function() {
+        const isEnabled = this.checked;
+        ttsVoiceSelect.disabled = !isEnabled;
+        ttsVolumeSlider.disabled = !isEnabled;
+        ttsRateSlider.disabled = !isEnabled;
+        ttsPitchSlider.disabled = !isEnabled;
+        localStorage.setItem(TTS_ENABLED_KEY, isEnabled);
+        if (!isEnabled && synth.speaking) {
+            synth.cancel(); // Stop speech if TTS is turned off
+        }
+    });
+    ttsVoiceSelect.addEventListener('change', function() { localStorage.setItem(TTS_VOICE_KEY, this.value); });
+    ttsVolumeSlider.addEventListener('change', function() { localStorage.setItem(TTS_VOLUME_KEY, this.value); });
+    ttsRateSlider.addEventListener('change', function() { localStorage.setItem(TTS_RATE_KEY, this.value); });
+    ttsPitchSlider.addEventListener('change', function() { localStorage.setItem(TTS_PITCH_KEY, this.value); });
+
+
+    // =========================================================================
+    //                            INITIAL LOAD
+    // =========================================================================
+
+    function loadSettings() {
+        // TTS Settings
+        const ttsEnabled = localStorage.getItem(TTS_ENABLED_KEY);
+        if (ttsEnabled !== null) ttsToggle.checked = (ttsEnabled === 'true');
+        ttsVoiceSelect.disabled = !ttsToggle.checked;
+
+        const ttsVoice = localStorage.getItem(TTS_VOICE_KEY);
+        if (ttsVoice) ttsVoiceSelect.value = ttsVoice;
+        
+        const ttsVolume = localStorage.getItem(TTS_VOLUME_KEY);
+        if (ttsVolume) ttsVolumeSlider.value = ttsVolume;
+        ttsVolumeSlider.disabled = !ttsToggle.checked;
+
+        const ttsRate = localStorage.getItem(TTS_RATE_KEY);
+        if (ttsRate) ttsRateSlider.value = ttsRate;
+        ttsRateSlider.disabled = !ttsToggle.checked;
+
+        const ttsPitch = localStorage.getItem(TTS_PITCH_KEY);
+        if (ttsPitch) ttsPitchSlider.value = ttsPitch;
+        ttsPitchSlider.disabled = !ttsToggle.checked;
+
+        // Apply disabled styles and pro badges
+        document.querySelectorAll('[disabled]').forEach(el => {
+            if (el.tagName === 'BUTTON' || el.tagName === 'A') {
+                el.classList.add('disabled');
+            } else if (el.tagName === 'SELECT' || el.tagName === 'INPUT') {
+                 el.style.color = 'var(--disabled-text)';
+            }
+        });
+    }
+
+    // Run on startup
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSettings();
+        loadChatHistory();
+        if (chatHistory.length === 0 || !localStorage.getItem(WELCOME_SEEN_KEY)) {
+            showWelcomeOverlay(); // Show welcome tour if no history or never seen
+        } else {
+            // If welcome seen and history loaded, render initial chips
+            renderQuickActionChips(generateContextualSuggestions().chips);
+        }
+        // Ensure voices are loaded after DOM and potentially after initial settings
+        if (synth.onvoiceschanged === undefined) { // If event not supported, try again
+            setTimeout(populateVoiceList, 1000);
+        }
+    });
+    
+     // Basic HTML Sanitization to prevent XSS if user input is ever reflected unsafely
+    function sanitizeHTML(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // Basic Markdown Parser for bold, italic, code
+    function parseMarkdown(text) {
+        // Bold: **text** or __text__
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/__(.*?)__/g, '<strong>$1</strong>');
+        // Italic: *text* or _text_
+        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        text = text.replace(/_(.*?)_/g, '<em>$1</em>');
+        // Code: `code`
+        text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+        return text;
+    }
+
+    // Chemical Formula Renderer (Converts H2O to H₂O, CO2 to CO₂, etc.)
+    function formatChemicalFormula(text) {
+        // Regex to find numbers after uppercase letters, symbols, or closing parentheses
+        // and apply subscript. Does not handle complex nested formulas reliably.
+        return text.replace(/([A-Z][a-z]?|\))(\d+)/g, (match, p1, p2) => {
+            const subscriptMap = {'0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉'};
+            return p1 + p2.split('').map(digit => subscriptMap[digit] || digit).join('');
+        });
+    }
+
+  </script>
+</body>
+</html>

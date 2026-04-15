@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Elementa Pro | Adaptive</title>
+<link rel="stylesheet" href="css/shimmer.css">
+<style>
+:root {
+--bg: #0a0a0a;
+--panel: #161616;
+--accent: #3b82f6;
+--text: #e5e7eb;
+--border: #262626;
+--drawer-w: 300px;
+--safe-top: env(safe-area-inset-top, 0px);
+--safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+body { background: var(--bg); color: var(--text); height: 100dvh; display: flex; overflow: hidden; position: fixed; width: 100%; }
+
+#container { display: flex; width: 100%; height: 100%; transition: all 0.3s ease; }
+#container.canvas-active #main { flex: 0.4; border-right: 1px solid var(--border); }
+#canvas-panel { flex: 0.6; display: none; background: #fff; position: relative; flex-direction: column; }
+#container.canvas-active #canvas-panel { display: flex; }
+
+.drawer { position: fixed; top: 0; bottom: 0; width: var(--drawer-w); background: var(--panel); z-index: 2000; transition: transform 0.3s ease; padding-top: var(--safe-top); }
+#drawer-left { left: 0; transform: translateX(-100%); border-right: 1px solid var(--border); }
+#drawer-right { right: 0; transform: translateX(100%); border-left: 1px solid var(--border); }
+.drawer.open { transform: translateX(0); }
+
+#overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1500; backdrop-filter: blur(4px); }
+#overlay.active { opacity: 1; pointer-events: auto; }
+
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+header { height: calc(60px + var(--safe-top)); display: flex; align-items: flex-end; justify-content: space-between; padding: 0 15px 12px; border-bottom: 1px solid var(--border); background: var(--bg); }
+
+#output { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; padding-bottom: 100px; }
+
+/* MESSAGE STYLING */
+.msg-wrap { display: flex; flex-direction: column; gap: 8px; position: relative; }
+.msg { max-width: 90%; line-height: 1.6; font-size: 15px; position: relative; }
+
+.user { align-self: flex-end; background: var(--accent); color: white; padding: 12px 18px; border-radius: 18px 18px 4px 18px; }
+.bot { align-self: flex-start; width: 100%; border-left: 2px solid var(--border); padding-left: 15px; overflow: hidden; }
+
+.msg-meta { font-size: 10px; font-weight: bold; opacity: 0.5; margin-bottom: 4px; display: flex; justify-content: space-between; cursor: pointer; }
+.collapsed .msg-body { display: none; }
+.collapsed::after { content: '... message collapsed'; font-size: 12px; opacity: 0.4; font-style: italic; }
+
+.replay-btn { font-size: 10px; color: var(--accent); cursor: pointer; text-transform: uppercase; margin-top: 4px; align-self: flex-end; }
+
+/* INPUT AREA */
+.input-container { position: absolute; bottom: 0; left: 0; right: 0; padding: 15px 15px calc(15px + var(--safe-bottom)); background: linear-gradient(transparent, var(--bg) 40%); }
+.bar { display: flex; align-items: flex-end; gap: 10px; background: #222; border-radius: 24px; padding: 8px 14px; border: 1px solid var(--border); }
+textarea { flex: 1; background: transparent; border: none; color: #fff; padding: 8px 0; font-size: 16px; outline: none; resize: none; max-height: 150px; }
+.btn { background: none; border: none; cursor: pointer; color: #888; padding: 8px; display: flex; align-items: center; }
+
+#canvas-header { background: #eee; padding: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #ccc; color: #000; }
+#canvas-frame { flex: 1; border: none; background: #fff; }
+
+pre { background: #000; padding: 15px; border-radius: 8px; margin: 10px 0; overflow-x: auto; position: relative; }
+code { font-family: monospace; font-size: 13px; }
+.code-tools { position: absolute; top: 5px; right: 10px; font-size: 10px; color: var(--accent); cursor: pointer; display: flex; gap: 8px; }
+
+.typing { display: flex; gap: 4px; padding: 10px 0; }
+.dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: bounce 1.4s infinite; }
+@keyframes bounce { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="closeDrawers()"></div>
+
+<div id="container">
+<aside id="drawer-left" class="drawer">
+<div style="padding: 20px; border-bottom: 1px solid var(--border);"><h3>History</h3></div>
+<div id="thread-list"></div>
+<button onclick="createNewThread()" style="margin: 20px; padding: 10px;">+ New Chat</button>
+</aside>
+
+<aside id="drawer-right" class="drawer">
+<div style="padding: 20px; border-bottom: 1px solid var(--border);"><h3>Settings</h3></div>
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+<input type="password" id="set-key" placeholder="API Key" style="padding: 10px; background: #000; color: #fff; border: 1px solid var(--border);">
+<select id="set-model" style="padding: 10px; background: #000; color: #fff; border: 1px solid var(--border);">
+<option value="gemini-3-flash">Gemini 3 Flash</option>
+<option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+<option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+<option value="gemini-2.5-pro-preview">Gemini 2.5 Pro Preview</option>
+</select>
+<button onclick="saveSettings()" style="background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px;">Save</button>
+</div>
+</aside>
+
+<div id="main">
+<header>
+<button class="btn" onclick="openDrawer('left')">☰</button>
+<div class="shimmer-text">Elementa Pro</div>
+<button class="btn" onclick="openDrawer('right')">⚙️</button>
+</header>
+
+<div id="output"></div>
+
+<div class="input-container">
+<div class="bar">
+<input type="file" id="f-hidden" hidden accept="image/*">
+<button class="btn" onclick="document.getElementById('f-hidden').click()">📎</button>
+<textarea id="user-input" placeholder="Ask anything..." rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+<button class="btn" onclick="handleSend()" style="color: var(--accent); font-weight: bold;">SEND</button>
+</div>
+</div>
+</div>
+
+<div id="canvas-panel">
+<div id="canvas-header">
+<strong>Preview</strong>
+<button onclick="toggleCanvas(false)" style="border:none; cursor:pointer;">✕ Close</button>
+</div>
+<iframe id="canvas-frame"></iframe>
+</div>
+</div>
+
+<script>
+let chatHistory = JSON.parse(localStorage.getItem('el_v11_chats')) || [];
+let activeThreadId = localStorage.getItem('el_v11_active') || null;
+let stagedFile = null;
+let isRequesting = false;
+
+function toggleCanvas(show) { document.getElementById('container').classList.toggle('canvas-active', show); }
+
+function updateCanvas(code) {
+const frame = document.getElementById('canvas-frame');
+frame.srcdoc = code.includes('<html') ? code : `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px;">${code}</body></html>`;
+toggleCanvas(true);
+}
+
+function mdParser(text) {
+return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+return `<pre><div class="code-tools"><span onclick="updateCanvas(this.closest('pre').querySelector('code').innerText)">PREVIEW</span><span onclick="copyCode(this)">COPY</span></div><code>${code.trim()}</code></pre>`;
+}).replace(/\n/g, '<br>');
+}
+
+function render(role, text, file = null) {
+const out = document.getElementById('output');
+const wrap = document.createElement('div');
+wrap.className = `msg-wrap ${role === 'bot' ? 'bot-wrap' : ''}`;
+
+const meta = document.createElement('div');
+meta.className = 'msg-meta';
+meta.innerHTML = `<span>${role.toUpperCase()}</span> ${role === 'bot' ? '<span>[TOGGLE]</span>' : ''}`;
+if(role === 'bot') meta.onclick = () => wrap.classList.toggle('collapsed');
+
+const body = document.createElement('div');
+body.className = `msg ${role} msg-body`;
+
+if (file) body.innerHTML += `<img src="${file.data}" style="max-width:200px; display:block; border-radius:8px; margin-bottom:10px;">`;
+body.innerHTML += mdParser(text);
+
+wrap.appendChild(meta);
+wrap.appendChild(body);
+
+if(role === 'user') {
+const replay = document.createElement('div');
+replay.className = 'replay-btn';
+replay.innerText = '↺ Replay / Edit';
+replay.onclick = () => { document.getElementById('user-input').value = text; document.getElementById('user-input').focus(); };
+wrap.appendChild(replay);
+}
+
+out.appendChild(wrap);
+out.scrollTop = out.scrollHeight;
+if(role === 'bot' && text.includes('```')) {
+const m = text.match(/```(?:html|)\n([\s\S]*?)```/i);
+if(m) updateCanvas(m[1]);
+}
+}
+
+async function handleSend() {
+if (isRequesting) return;
+const field = document.getElementById('user-input');
+const key = localStorage.getItem('el_key');
+if (!key) return alert("Missing API Key");
+
+const text = field.value.trim();
+if (!text && !stagedFile) return;
+
+isRequesting = true;
+render('user', text, stagedFile);
+
+let thread = chatHistory.find(t => t.id === activeThreadId) || createNewThread(true);
+thread.messages.push({ role: 'user', content: text, file: stagedFile });
+
+field.value = ''; field.style.height = '46px';
+const loader = document.createElement('div');
+loader.innerHTML = `<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+document.getElementById('output').appendChild(loader);
+
+try {
+const model = localStorage.getItem('el_model') || 'gemini-3-flash';
+const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+contents: thread.messages.map(m => ({
+role: m.role === 'user' ? 'user' : 'model',
+parts: [{ text: m.content || "Image description" }, ...(m.file ? [{ inline_data: { mime_type: m.file.type, data: m.file.data.split(',')[1] } }] : [])]
+}))
+})
+});
+const data = await res.json();
+const reply = data.candidates[0].content.parts[0].text;
+loader.remove();
+render('bot', reply);
+thread.messages.push({ role: 'model', content: reply });
+saveData();
+} catch (e) {
+loader.remove();
+render('bot', "Error: Check Console/API Key");
+}
+isRequesting = false;
+stagedFile = null;
+}
+
+function createNewThread(internal = false) {
+const id = 't_' + Date.now();
+const thread = { id, title: 'New Chat', messages: [] };
+chatHistory.unshift(thread);
+activeThreadId = id;
+if(!internal) { document.getElementById('output').innerHTML = ''; saveData(); closeDrawers(); }
+return thread;
+}
+
+function saveData() { localStorage.setItem('el_v11_chats', JSON.stringify(chatHistory)); localStorage.setItem('el_v11_active', activeThreadId); }
+function openDrawer(id) { document.getElementById('drawer-'+id).classList.add('open'); document.getElementById('overlay').classList.add('active'); }
+function closeDrawers() { document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open')); document.getElementById('overlay').classList.remove('active'); }
+function saveSettings() {
+localStorage.setItem('el_key', document.getElementById('set-key').value);
+localStorage.setItem('el_model', document.getElementById('set-model').value);
+closeDrawers();
+}
+function copyCode(btn) {
+navigator.clipboard.writeText(btn.closest('pre').querySelector('code').innerText);
+btn.innerText = 'COPIED'; setTimeout(() => btn.innerText = 'COPY', 2000);
+}
+
+document.getElementById('f-hidden').onchange = (e) => {
+const f = e.target.files[0];
+const r = new FileReader();
+r.onload = (ev) => { stagedFile = { data: ev.target.result, type: f.type }; alert("Image Ready"); };
+r.readAsDataURL(f);
+};
+
+window.onload = () => {
+document.getElementById('set-key').value = localStorage.getItem('el_key') || '';
+document.getElementById('set-model').value = localStorage.getItem('el_model') || 'gemini-3-flash';
+if (!activeThreadId && chatHistory.length === 0) createNewThread();
+};
+</script>
+</body>
+</html>

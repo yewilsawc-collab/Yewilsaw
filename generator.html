@@ -1,0 +1,58 @@
+ <!DOCTYPE html> 
+ <html lang="en"> 
+ <head> 
+ <meta charset="UTF-8"> 
+ <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+ 
+ <title>Elementa | Bot Array Generator</title> 
+ 
+ <style> 
+ 
+ :root { --forest-green: #2d5a27; --moss: #a3b18a; --wood: #6d4c41; --leaf: #ecf3f0; } 
+ 
+ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--leaf); color: var(--forest-green); display: flex; flex-direction: column; align-items: center; padding: 50px; } 
+ 
+ .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 600px; text-align: center; border-top: 5px solid var(--forest-green); } 
+ 
+ h1 { margin-bottom: 10px; } 
+ 
+ p { color: var(--wood); font-style: italic; } 
+ 
+ input { padding: 10px; width: 80%; border: 2px solid var(--moss); border-radius: 5px; margin: 20px 0; font-size: 1rem; } 
+ 
+ button { background-color: var(--forest-green); color: white; border: none; padding: 15px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; } 
+ 
+ button:hover { background-color: var(--wood); } #status { margin-top: 20px; font-weight: bold; } 
+ 
+ textarea { margin-top: 20px; width: 100%; height: 150px; border-radius: 5px; border: 1px solid #ccc; font-family: monospace; display: none; } 
+ 
+ </style> 
+ </head> 
+ <body> 
+ 
+ <div class="container"> 
+ <h1>Elementa Generator</h1> <p>Generate thousands of woodland jokes, puns, and facts.</p> 
+ 
+ <input type="number" id="count" value="1000" placeholder="How many items?"> <br> 
+ 
+ <button onclick="generateData()">Generate & Download JSON</button> 
+ 
+ <div id="status">
+   
+ </div> 
+ 
+ <textarea id="output"></textarea> 
+ 
+ </div>
+ 
+ 
+ <script> 
+ const animals = ["squirrel", "owl", "bear", "fox", "deer", "raccoon", "hedgehog", "wolf", "badger", "chipmunk"]; const trees = ["oak", "pine", "willow", "birch", "maple", "cedar", "sequoia", "spruce"]; const adjectives = ["mystical", "mossy", "crunchy", "ancient", "whispering", "golden", "sleepy", "tiny"]; const actions = ["gathering nuts", "howling at the moon", "chasing fireflies", "taking a nap", "planting seeds", "climbing branches"]; const feelings = ["pine-tastic", "oak-ay", "un-be-leaf-able", "stumped", "root-ed", "birch-y"]; const templates = [ "Why did the {animal} cross the forest? To find the {adj} {tree}!", "Did you know {adj} {animal}s love {actions} in the {tree} woods?", "I'm feeling quite {feeling} today, just like a {animal} in a {tree}.", "What do you call a {adj} {animal}? A {tree} whisperer!", "Is it just me, or is {actions} under an {tree} the best way to spend a day?", "That {animal} is so {feeling} it's making the {tree}s shake!", "A {adj} {animal} once told me that the forest is full of {feeling} surprises.", "Have you ever seen a {animal} {actions}? It's truly {adj}!", "Why was the {tree} so happy? Because the {animal} stopped {actions}!", "Casual thought: If a {animal} can be {adj}, why can't we all be {feeling}?" ]; 
+ function generateData() { const count = document.getElementById('count').value; const status = document.getElementById('status'); const output = document.getElementById('output'); status.innerText = "Growing your forest of jokes..."; let results = new Set(); // Use a Set to ensure unique lines 
+ let safetyBreaker = 0; while(results.size < count && safetyBreaker < count * 2) { let template = templates[Math.floor(Math.random() * templates.length)]; let joke = template .replace("{animal}", animals[Math.floor(Math.random() * animals.length)]) .replace("{tree}", trees[Math.floor(Math.random() * trees.length)]) .replace("{adj}", adjectives[Math.floor(Math.random() * adjectives.length)]) .replace("{actions}", actions[Math.floor(Math.random() * actions.length)]) .replace("{feeling}", feelings[Math.floor(Math.random() * feelings.length)]); results.add(joke); safetyBreaker++; } const finalArray = Array.from(results); const jsonContent = JSON.stringify(finalArray, null, 2); // Preview in textarea 
+ output.style.display = "block"; output.value = jsonContent; // Download trigger 
+ const blob = new Blob([jsonContent],
+ { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `elementa_jokes_${count}.json`; a.click(); status.innerText = `Successfully sprouted ${finalArray.length} items!`; } 
+ </script> 
+ </body> 
+ </html> 

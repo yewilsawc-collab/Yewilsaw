@@ -1,0 +1,1618 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<style>
+  
+  :root {
+    --jelly-bg: rgba(255, 255, 255, 0.7);
+    --jelly-border: rgba(255, 255, 255, 0.4);
+    --accent: #70a1ff;
+    --bg-card: rgba(255,255,255,0.05);
+    
+}
+
+html, body {
+    overscroll-behavior-y: none; /* Prevents pull-to-refresh */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    overflow: hidden;
+}
+
+/* Drawer Styling */
+/* Shared Drawer Base */
+.drawer {
+    position: fixed;
+    top: 10px;
+    width: 280px;
+    height: calc(100% - 20px);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+/* Left Drawer Specifics */
+.drawer-l {
+    left: 0;
+    border-radius: 0 30px 30px 0;
+    transform: translateX(-105%); /* Hidden left */
+}
+
+/* Right Drawer Specifics */
+.drawer-r {
+    right: 0;
+    border-radius: 30px 0 0 30px;
+    transform: translateX(105%); /* Hidden right */
+}
+
+/* Active States */
+.drawer.open {
+    transform: translateX(0);
+}
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.1); /* Very light tint */
+    backdrop-filter: blur(4px);    /* Jelly-style blur */
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 999;
+    /* Essential for mobile: removes the tap highlight color */
+    -webkit-tap-highlight-color: transparent; 
+}
+
+.overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+/* Menu Button */
+.menu-btn {
+    padding: 15px;
+    background: var(--jelly-bg);
+    border: 1px solid var(--jelly-border);
+    border-radius: 15px;
+    margin: 10px;
+    cursor: pointer;
+}
+
+.chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    /* Prevents the whole page from bouncing on mobile */
+    overscroll-behavior: contain; 
+    /* Smooth scrolling for JS scrollTo calls */
+    scroll-behavior: smooth; 
+}
+
+/* Hide scrollbar for Chrome/Safari (Android/Termux browsers) */
+.chat-container::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-display {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 80px; /* Space for the fixed input area */
+}
+
+/* Base style for main to allow flex growing */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.message {
+    max-width: 80%;
+    padding: 12px 18px;
+    font-size: 14px;
+    line-height: 1.5;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: bubbleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* User Message - Right Aligned */
+.user-msg {
+    align-self: flex-end;
+    background: rgba(112, 161, 255, 0.4); /* Soft Blue */
+    border-radius: 20px 20px 4px 20px;
+    color: #002;
+}
+
+/* AI Message - Left Aligned */
+.ai-msg {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 20px 20px 20px 4px;
+    color: #333;
+}
+
+@keyframes bubbleIn {
+    from { opacity: 0; transform: scale(0.8) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Update your existing drawer CSS with this transition */
+.drawer {
+    /* ... existing styles ... */
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    will-change: transform; /* Optimizes mobile performance */
+}
+
+/* Optional: Add a visual 'handle' to suggest swiping */
+.drawer-l::after {
+    content: '';
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    width: 5px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    transform: translateY(-50%);
+}
+
+.upload-preview-bar {
+    display: flex;
+    gap: 10px;
+    padding: 0 15px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none; /* Firefox */
+    max-height: 0;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.upload-preview-bar.active {
+    max-height: 100px;
+    padding: 10px 15px;
+}
+
+.upload-preview-bar::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Android */
+}
+
+.preview-item {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    background: var(--jelly-bg);
+    border-radius: 12px;
+    border: 1px solid var(--jelly-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    animation: bubbleIn 0.3s ease;
+}
+
+.preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.preview-item .file-ext {
+    font-size: 10px;
+    font-weight: bold;
+    color: var(--accent);
+}
+
+.remove-file {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(255,0,0,0.6);
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+/* Lightbox Styling */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(15px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lightbox.active {
+    display: flex;
+    opacity: 1;
+}
+
+.lightbox-content img, .lightbox-content video {
+    max-width: 90vw;
+    max-height: 80vh;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* Add to your CSS */
+.lightbox-content img {
+    user-select: none;
+    -webkit-user-drag: none;
+}
+.lightbox.active {
+    display: flex !important;
+}
+/* Chat Media Styles */
+/* Update existing media-content style */
+.message .media-scroll-area {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.message .media-scroll-area::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-item-wrapper {
+    flex: 0 0 140px; /* Fixed width for items in scroll */
+    height: 140px;
+    border-radius: 15px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.05);
+    border: 1px solid var(--jelly-border);
+}
+
+.chat-image, .chat-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+.chat-image, .chat-video {
+    width: 100%;
+    display: block;
+    max-height: 200px;
+    object-fit: cover;
+}
+
+.file-attachment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    font-size: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Code Window Styling */
+.code-container {
+    background: #1e1e1e;
+    border-radius: 12px;
+    margin: 10px 0;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.code-header {
+    background: #2d2d2d;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow-x: auto; /* Scrollable header */
+    white-space: nowrap;
+}
+
+.dots { display: flex; gap: 6px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.red { background: #ff5f56; }
+.yellow { background: #ffbd2e; }
+.green { background: #27c93f; }
+
+.lang-tag {
+    color: #888;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-left: 15px;
+}
+
+.code-wrapper {
+    display: flex;
+    overflow-x: auto;
+    font-family: 'monospace';
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.gutter {
+    padding: 10px 8px;
+    background: #1a1a1a;
+    color: #555;
+    text-align: right;
+    user-select: none;
+    border-right: 1px solid #333;
+}
+
+pre {
+    margin: 0;
+    padding: 10px;
+    color: #d4d4d4;
+    white-space: pre;
+}
+
+/* Preview Iframe */
+.preview-frame {
+    width: 100%;
+    height: 250px;
+    background: white;
+    border: none;
+    border-radius: 0 0 12px 12px;
+    display: none; /* Hidden until toggled */
+}
+
+/* Collapsible Container */
+.collapsible-wrapper {
+    border: 1px solid var(--jelly-border);
+    border-radius: 15px;
+    margin: 8px 0;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.collapsible-header {
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.2);
+    user-select: none;
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
+    padding: 0 10px;
+}
+
+.collapsible-wrapper.open .collapsible-content {
+    max-height: 2000px; /* Large enough to fit content */
+    transition: max-height 0.4s ease-in-out;
+    padding: 10px;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+    font-size: 12px;
+}
+
+.collapsible-wrapper.open .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.chat-tab {
+    padding: 12px 15px;
+    margin: 8px 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--jelly-border);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chat-tab.active {
+    background: var(--accent);
+    color: white;
+    border-color: rgba(255,255,255,0.5);
+}
+
+.tab-title {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 160px;
+}
+
+.delete-tab {
+    opacity: 0.6;
+    padding: 5px;
+}
+
+ .input-wrapper {
+            background: var(--bg-card); /* Changed to use glass-card bg */
+            border: 1px solid var(--border-color); /* Changed to use glass-card border */
+            border-radius: 24px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            backdrop-filter: blur(10px); /* Add blur for glassmorphism */
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent-glow);
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 8px 0;
+            resize: none;
+            outline: none;
+            max-height: 200px; width: 100%;
+            font-size: calc(16px * var(--font-scale, 1));
+        }
+
+        /* --- UI Elements --- */
+        .glass-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05); /* Adjusted for consistency */
+            border: 1px solid var(--border-color);
+            color: var(--text-color-medium); /* Adjusted for consistency */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            font-size: calc(16px * var(--font-scale, 1));
+        }
+
+        .glass-circle:hover { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* Speaker Capsule */
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 25px;
+    padding: 6px 15px;
+    margin-bottom: 10px;
+    width: fit-content;
+    position: sticky;
+    top: 10px;
+    z-index: 100;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.audio-controls.playing {
+    background: var(--accent);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 20px var(--accent);
+}
+
+.speaker-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+
+/* Identity & Header */
+.msg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 1px;
+}
+
+.ai-avatar-glow {
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 10px var(--accent);
+    font-size: 10px;
+    color: white;
+}
+
+/* The Semantic Body */
+.message-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.message-body output {
+    display: block;
+    width: 100%;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    font-family: inherit;
+    white-space: pre-wrap; /* Crucial for streaming text */
+}
+
+/* The Action Footer */
+.msg-footer {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.msg-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: flex-start;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.action-btn:active { transform: scale(1.4); }
+
+
+/* Syntax Highlighting */
+.hl-keyword { color: #ff79c6; }
+.hl-func { color: #50fa7b; }
+.hl-string { color: #f1fa8c; }
+.hl-comment { color: #6272a4; font-style: italic; }
+
+/* Technical Header Suture */
+.msg-header-group {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 8px;
+    cursor: pointer; /* Indicates the whole header is interactive */
+}
+
+.msg-meta {
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    opacity: 0.6;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    text-transform: uppercase;
+}
+
+.ai-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+/* Logic for "Minimized" state */
+.message.minimized .message-body,
+.message.minimized .msg-footer {
+    display: none !important;
+}
+
+.message.minimized .msg-header-group {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/* Source Folder Suture */
+.collapsible-wrapper {
+    margin: 10px 0;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+
+.collapsible-header .toggle-icon {
+    font-size: 8px;
+    transition: transform 0.3s ease;
+    opacity: 0.5;
+}
+
+.collapsible-wrapper.open .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.collapsible-content {
+    display: none;
+    padding: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.collapsible-wrapper.open .collapsible-content {
+    display: block;
+}
+
+/* Unified Header Suture */
+.msg-header-group {
+    cursor: pointer;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    margin: -12px -18px 10px -18px; /* Negative margin to flush with bubble edges */
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 18px 18px 0 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.msg-meta {
+    font-size: 10px;
+    font-weight: 800;
+    opacity: 0.6;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ai-identity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+/* Minimize Logic */
+.message.minimized .message-body,
+.message.minimized .msg-footer,
+.message.minimized .media-scroll-area {
+    display: none !important;
+}
+
+.message.minimized {
+    padding-bottom: 0px;
+}
+
+.message.minimized .msg-header-group {
+    border-bottom: none;
+    margin-bottom: 0;
+    border-radius: 18px; /* Round all corners when closed */
+}
+
+
+
+</style>
+</head>
+<body>
+
+<div id="overlay" class="overlay" onclick="closeAllDrawers()"></div>
+
+       <div id="drawer-left" class="drawer drawer-l">
+    <div class="drawer-header">
+        <h3>Elementa</h3>
+        <button onclick="createNewChat()" class="icon-btn" style="font-size: 20px;">+</button>
+    </div>
+    <div class="drawer-content" id="tab-list">
+        </div>
+</div>
+
+<div id="drawer-right" class="drawer drawer-r">
+    <div class="drawer-header">
+       
+    
+    
+    
+    <div class="tool-item">
+        <label style="font-size: 11px; opacity: 0.7;">GEMINI API KEY</label>
+        <input type="password" id="apiKeyInput" placeholder="Paste Key Here..." 
+               style="width: 100%; margin-top: 5px; background: rgba(0,0,0,0.1); border: 1px solid var(--jelly-border); border-radius: 8px; color: #fff; padding: 8px; box-sizing: border-box;">
+        <div id="keyStatus" style="font-size: 10px; margin-top: 5px; color: var(--accent);">Checking key...</div>
+    </div>
+
+    <div class="tool-item">
+        <label style="font-size: 11px; opacity: 0.7;">ACTIVE MODEL</label>
+        <select id="modelSelect" 
+                style="width: 100%; margin-top: 5px; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--jelly-border); border-radius: 8px; padding: 8px;">
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast)</option>
+        <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+        <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite Preview</option>
+   
+        </select>
+    </div>
+    
+    <div class="tool-item">
+    <label style="font-size: 11px; opacity: 0.7;">GEMINI TTS VOICE PERSONA</label>
+    <select id="ttsVoiceSelect" 
+            style="width: 100%; margin-top: 5px; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--jelly-border); border-radius: 8px; padding: 8px;">
+        <option value="Zephyr">Zephyr (Bright & Friendly)</option>
+        <option value="Kore">Kore (Firm & Professional)</option>
+        <option value="Ursa">Ursa (Deep & Calm)</option>
+        <option value="System">Browser Default (Offline)</option>
+    </select>
+</div>
+
+    
+
+    <div class="tool-item">
+        <label style="font-size: 11px; opacity: 0.7;">CHAT FONT STYLE</label>
+        <div class="style-toggle-group" style="display: flex; background: rgba(0,0,0,0.15); border: 1px solid var(--jelly-border); border-radius: 12px; padding: 3px; gap: 3px; margin-top: 5px;">
+            <button id="btnStyleSans" class="style-btn active" onclick="updateTextStyle('sans')" style="flex:1; border:none; background:transparent; color:white; padding:8px; font-size:11px; border-radius:9px; cursor:pointer;">Sans</button>
+            <button id="btnStyleMono" class="style-btn" onclick="updateTextStyle('mono')" style="flex:1; border:none; background:transparent; color:white; padding:8px; font-size:11px; border-radius:9px; cursor:pointer;">Mono</button>
+        </div>
+    </div>
+
+    
+
+    <div class="tool-item">
+        <label style="font-size: 11px; opacity: 0.7;">TEMPERATURE: <span id="tempDisplay">0.7</span></label>
+        <input type="range" id="tempInput" min="0" max="1" step="0.1" value="0.7" 
+               oninput="document.getElementById('tempDisplay').innerText = this.value"
+               style="width: 100%; margin-top: 8px; accent-color: var(--accent);">
+    </div>
+
+    <button onclick="saveAllSettings()" class="icon-btn" style="width: 100%; padding: 12px; margin-top: 15px; background: var(--accent); color: white; border-radius: 12px; font-weight: bold;">
+        Save All Settings
+    </button>
+
+    
+    <div id="keyStatus" style="font-size: 10px; margin-top: 5px; color: var(--accent);">
+        Key not set
+    </div>
+</div>
+          </div>
+</div>
+
+
+<main class="main-content">
+    <div class="top-nav">
+        <button onclick="toggleDrawer('left')" class="menu-btn">☰</button>
+        <span class="logo">Elementa</span>
+        <button onclick="toggleDrawer('right')" class="menu-btn">⚙</button>
+    </div>
+    
+    
+
+
+    <div id="chatContainer" class="chat-container">
+        <div id="chatDisplay" class="chat-display">
+            </div>
+    </div>
+   <div id="uploadPreviewBar" class="upload-preview-bar"></div>
+    <div class="input-wrapper">
+        <input type="file" id="fileInput" multiple accept="image/*,text/*,.js,.html,.css" style="display:none" onchange="handleFileSelect(this)">
+        <button class="glass-circle" onclick="document.getElementById('fileInput').click()">📎</button>
+        <textarea id="chatInput" placeholder="Type a message..." rows="1"></textarea>
+        <button class="glass-circle" onclick="sendMessage()">Send</button>
+    </div>
+
+<div id="lightbox" class="lightbox">
+    <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
+    
+    <button class="gallery-nav prev" onclick="changeGallery(-1)">&#10094;</button>
+    <div id="lightboxContent" class="lightbox-content"></div>
+    <button class="gallery-nav next" onclick="changeGallery(1)">&#10095;</button>
+    
+    <div id="galleryCount" class="gallery-count"></div>
+</div>
+
+
+  
+
+<script>
+
+let currentChatId = localStorage.getItem('last_active_chat') || Date.now().toString();
+
+  
+// Top of <script>
+let stagedFiles = [];
+let currentGallery = [];
+let currentIndex = 0;
+let lbTouchStart = { x: 0, y: 0 };
+let lbTouchEnd = { x: 0, y: 0 };
+let touchStartX = 0;
+let currentUtterance = null;
+
+let currentFontStyle = 'sans';
+// Global references for UI elements
+const drawerL = document.getElementById('drawer-left');
+const drawerR = document.getElementById('drawer-right');
+const overlay = document.getElementById('overlay');
+
+
+
+function updateTextStyle(style) {
+    currentFontStyle = style;
+    const display = document.getElementById('chatDisplay');
+    const sansBtn = document.getElementById('btnStyleSans');
+    const monoBtn = document.getElementById('btnStyleMono');
+    
+    display.style.fontFamily = (style === 'mono') ? '"Fira Code", monospace' : 'sans-serif';
+    
+    // Toggle active visual state
+    if (style === 'mono') {
+        monoBtn.style.background = 'var(--accent)';
+        sansBtn.style.background = 'transparent';
+    } else {
+        sansBtn.style.background = 'var(--accent)';
+        monoBtn.style.background = 'transparent';
+    }
+}
+
+function saveAllSettings() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    const model = document.getElementById('modelSelect').value;
+    const temp = document.getElementById('tempInput').value;
+    
+    if (key) localStorage.setItem('elementa_api_key', key);
+    localStorage.setItem('elementa_model_choice', model);
+    localStorage.setItem('elementa_temperature', temp);
+    localStorage.setItem('elementa_font_style', currentFontStyle);
+    const voiceIdx = document.getElementById('ttsVoiceSelect').value;
+    localStorage.setItem('elementa_tts_voice', voiceIdx);
+    
+    // UI confirmation as before
+
+    
+    updateKeyStatus();
+    
+    
+    
+    // Quick feedback animation
+    const btn = event.currentTarget;
+    btn.innerText = "✓ Settings Saved";
+    setTimeout(() => {
+        btn.innerText = "Save All Settings";
+        closeAllDrawers();
+    }, 1200);
+}
+
+function loadAllSettings() {
+    const savedModel = localStorage.getItem('elementa_model_choice') || 'gemini-3.1-flash-lite-preview';
+    const savedTemp = localStorage.getItem('elementa_temperature') || '0.7';
+    const savedFont = localStorage.getItem('elementa_font_style') || 'sans';
+    
+    document.getElementById('modelSelect').value = savedModel;
+    document.getElementById('tempInput').value = savedTemp;
+    document.getElementById('tempDisplay').innerText = savedTemp;
+    
+    updateTextStyle(savedFont);
+    updateKeyStatus();
+    const savedVoice = localStorage.getItem('elementa_tts_voice') || 0;
+    setTimeout(() => { // Small delay to ensure voices populated
+        document.getElementById('ttsVoiceSelect').value = savedVoice;
+    }, 100);
+}
+
+function updateKeyStatus(isSet) {
+    const status = document.getElementById('keyStatus');
+    if (isSet || localStorage.getItem('elementa_api_key')) {
+        status.textContent = "● Key Active";
+        status.style.color = "#27c93f"; // Green traffic light
+    } else {
+        status.textContent = "○ Key Required";
+        status.style.color = "#ff5f56"; // Red traffic light
+    }
+}
+
+  
+
+
+// Global references for gesture and button logic
+
+function toggleDrawer(side) {
+    if (side === 'left') {
+        drawerL.classList.toggle('open');
+        drawerR.classList.remove('open');
+    } else {
+        drawerR.classList.toggle('open');
+        drawerL.classList.remove('open');
+    }
+    
+    const anyOpen = drawerL.classList.contains('open') || drawerR.classList.contains('open');
+    overlay.classList.toggle('active', anyOpen);
+    
+    // Support for Android system back button
+    if (anyOpen && (!history.state || !history.state.drawerOpen)) {
+        history.pushState({ drawerOpen: true }, '');
+    }
+}
+
+function closeAllDrawers() {
+    drawerL.classList.remove('open');
+    drawerR.classList.remove('open');
+    overlay.classList.remove('active');
+}
+
+// Map openDrawer to toggleDrawer for swipe compatibility
+function openDrawer(side) {
+    toggleDrawer(side);
+}
+
+
+function handleGesture() {
+    const deltaX = touchEndX - touchStartX;
+
+    // --- LEFT DRAWER GESTURES ---
+    // Swipe Right from Left Edge -> Open Left
+    if (deltaX > swipeThreshold && touchStartX < edgeMargin) {
+        openDrawer('left');
+    }
+    // Swipe Left while Left is Open -> Close Left
+    if (deltaX < -swipeThreshold && drawerL.classList.contains('open')) {
+        closeAllDrawers();
+    }
+
+    // --- RIGHT DRAWER GESTURES ---
+    // Swipe Left from Right Edge -> Open Right
+    if (deltaX < -swipeThreshold && touchStartX > window.innerWidth - edgeMargin) {
+        openDrawer('right');
+    }
+    // Swipe Right while Right is Open -> Close Right
+    if (deltaX > swipeThreshold && drawerR.classList.contains('open')) {
+        closeAllDrawers();
+    }
+}
+
+
+function handleFileSelect(input) {
+    const bar = document.getElementById('uploadPreviewBar');
+    const files = Array.from(input.files);
+    
+    files.forEach(file => {
+        stagedFiles.push(file);
+        const reader = new FileReader();
+        
+        const previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+        
+        if (file.type.startsWith('image/')) {
+            reader.onload = (e) => {
+                previewItem.innerHTML = `
+                    <img src="${e.target.result}">
+                    <div class="remove-file" onclick="removeStagedFile(this, '${file.name}')">&times;</div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // For code/text files
+            const ext = file.name.split('.').pop().toUpperCase();
+            previewItem.innerHTML = `
+                <div class="file-ext">${ext}</div>
+                <div class="remove-file" onclick="removeStagedFile(this, '${file.name}')">&times;</div>
+            `;
+        }
+        
+        bar.appendChild(previewItem);
+    });
+
+    if (stagedFiles.length > 0) bar.classList.add('active');
+    input.value = ""; // Clear input so same file can be re-added if needed
+}
+
+function removeStagedFile(element, fileName) {
+    stagedFiles = stagedFiles.filter(f => f.name !== fileName);
+    element.parentElement.remove();
+    if (stagedFiles.length === 0) {
+        document.getElementById('uploadPreviewBar').classList.remove('active');
+    }
+}
+
+
+
+
+function openLightbox(files, index) {
+    currentGallery = files.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
+    currentIndex = currentGallery.findIndex(f => f.url === files[index].url);
+    
+    document.getElementById('lightbox').classList.add('active');
+    updateLightboxContent();
+}
+
+function updateLightboxContent() {
+    const content = document.getElementById('lightboxContent');
+    const count = document.getElementById('galleryCount');
+    const file = currentGallery[currentIndex];
+    
+    if (file.type.startsWith('image/')) {
+        content.innerHTML = `<img src="${file.url}">`;
+    } else {
+        content.innerHTML = `<video src="${file.url}" controls autoplay></video>`;
+    }
+    
+    count.textContent = `${currentIndex + 1} / ${currentGallery.length}`;
+    
+    // Hide nav buttons if only one item
+    document.querySelectorAll('.gallery-nav').forEach(btn =>
+        btn.style.display = currentGallery.length > 1 ? 'block' : 'none'
+    );
+}
+
+function changeGallery(step) {
+    currentIndex += step;
+    if (currentIndex >= currentGallery.length) currentIndex = 0;
+    if (currentIndex < 0) currentIndex = currentGallery.length - 1;
+    updateLightboxContent();
+}
+
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+    document.getElementById('lightboxContent').innerHTML = '';
+}
+
+function createCodeBlock(code, lang = 'txt') {
+    const lines = code.split('\n');
+    const gutterHtml = lines.map((_, i) => i + 1).join('<br>');
+    
+    const container = document.createElement('div');
+    container.className = 'code-container';
+    
+    container.innerHTML = `
+        <div class="code-header">
+            <div class="dots">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+                <span class="lang-tag">${lang}</span>
+            </div>
+            <div>
+                <button class="icon-btn" onclick="copyCode(this)">Copy</button>
+                <button class="icon-btn" onclick="togglePreview(this)">Preview</button>
+            </div>
+        </div>
+        <div class="code-wrapper">
+            <div class="gutter">${gutterHtml}</div>
+            <pre><code>${code}</code></pre>
+        </div>
+        <iframe class="preview-frame"></iframe>
+    `;
+    return container;
+}
+
+function copyCode(btn) {
+    const code = btn.closest('.code-container').querySelector('code').innerText;
+    navigator.clipboard.writeText(code);
+    btn.innerText = 'Copied!';
+    setTimeout(() => btn.innerText = 'Copy', 2000);
+}
+
+function togglePreview(btn) {
+    const container = btn.closest('.code-container');
+    const iframe = container.querySelector('.preview-frame');
+    const code = container.querySelector('code').innerText;
+    
+    if (iframe.style.display === 'block') {
+        iframe.style.display = 'none';
+    } else {
+        iframe.style.display = 'block';
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(code);
+        doc.close();
+    }
+}
+
+function wrapCollapsible(element, title = "View Source") {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'collapsible-wrapper';
+    
+    // Using a more technical naming convention for the header
+    const cleanTitle = title.includes(':') ? title : `SOURCE: ${title.toUpperCase()}`;
+    
+    wrapper.innerHTML = `
+        <div class="collapsible-header">
+            <span>📁 ${cleanTitle}</span>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="collapsible-content"></div>
+    `;
+    
+    // Suture the click event to the header
+    wrapper.querySelector('.collapsible-header').onclick = (e) => {
+        e.stopPropagation(); // Prevents the main message from toggling
+        wrapper.classList.toggle('open');
+    };
+    
+    wrapper.querySelector('.collapsible-content').appendChild(element);
+    return wrapper;
+}
+
+
+function createNewChat() {
+    const newId = Date.now().toString();
+    currentChatId = newId;
+    localStorage.setItem('last_active_chat', newId);
+    
+    // Clear display for new chat
+    document.getElementById('chatDisplay').innerHTML = '';
+    renderTabs();
+    closeAllDrawers();
+    
+    // Optional: Auto-focus input
+    document.getElementById('chatInput').focus();
+}
+
+function switchChat(id) {
+    currentChatId = id;
+    localStorage.setItem('last_active_chat', id);
+    
+    const display = document.getElementById('chatDisplay');
+    display.innerHTML = '';
+    
+    // Load history for THIS specific chat
+    const history = JSON.parse(localStorage.getItem('chat_' + id)) || [];
+    history.forEach(msg => renderMessage(msg.text, msg.type, msg.files));
+    
+    renderTabs();
+    closeAllDrawers();
+}
+
+function renderTabs() {
+    const tabList = document.getElementById('tab-list');
+    tabList.innerHTML = '';
+    
+    // Find all keys starting with 'chat_'
+    const chats = Object.keys(localStorage)
+        .filter(key => key.startsWith('chat_'))
+        .map(key => ({
+            id: key.replace('chat_', ''),
+            lastMsg: JSON.parse(localStorage.getItem(key)).slice(-1)[0]?.text || "New Chat"
+        }));
+    
+    // If no chats exist yet, create the first one
+    if (chats.length === 0) {
+        const initialHistory = [];
+        localStorage.setItem('chat_' + currentChatId, JSON.stringify(initialHistory));
+        chats.push({ id: currentChatId, lastMsg: "New Chat" });
+    }
+    
+    chats.sort((a, b) => b.id - a.id).forEach(chat => {
+        const tab = document.createElement('div');
+        tab.className = `chat-tab ${chat.id === currentChatId ? 'active' : ''}`;
+        tab.onclick = () => switchChat(chat.id);
+        
+        tab.innerHTML = `
+            <span class="tab-title">${chat.lastMsg}</span>
+            <span class="delete-tab" onclick="event.stopPropagation(); deleteChat('${chat.id}')">&times;</span>
+        `;
+        tabList.appendChild(tab);
+    });
+}
+
+function deleteChat(id) {
+    if (confirm("Delete this conversation?")) {
+        localStorage.removeItem('chat_' + id);
+        if (id === currentChatId) {
+            const remaining = Object.keys(localStorage).filter(k => k.startsWith('chat_'));
+            if (remaining.length > 0) switchChat(remaining[0].replace('chat_', ''));
+            else createNewChat();
+        } else {
+            renderTabs();
+        }
+    }
+}
+
+function renderMessage(text, type, files = []) {
+    const display = document.getElementById('chatDisplay');
+    const container = document.getElementById('chatContainer');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${type}`;
+    
+    // --- CONSOLIDATED CLICKABLE HEADER ---
+    const headerGroup = document.createElement('div');
+    headerGroup.className = 'msg-header-group';
+    headerGroup.onclick = () => msgDiv.classList.toggle('minimized');
+    
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const label = type === 'ai-msg' ? 'SYSTEM.EXEC' : 'USER.INPUT';
+    const name = type === 'ai-msg' ? 'ELEMENTA AI' : 'YEWILSAW';
+    const initial = type === 'ai-msg' ? 'E' : 'Y';
+    
+    headerGroup.innerHTML = `
+        <div class="msg-meta">
+            <span>● ${label}</span>
+            <span>${timestamp}</span>
+        </div>
+        <div class="ai-identity">
+            <div class="ai-avatar-glow">${initial}</div>
+            <span>${name}</span>
+        </div>
+    `;
+    msgDiv.appendChild(headerGroup);
+    
+    // --- MESSAGE BODY (The part that collapses) ---
+    const bodyDiv = document.createElement('div');
+    bodyDiv.className = 'message-body';
+    
+    // Voice button (only for AI)
+    if (type === 'ai-msg') {
+        const btnRow = document.createElement('div');
+        btnRow.style = "display:flex; justify-content:flex-end; margin-top:-5px;";
+        btnRow.innerHTML = `<button class="speaker-btn" onclick="event.stopPropagation(); toggleSpeech(this, this.closest('.message').querySelector('output').innerText)">🔊</button>`;
+        bodyDiv.appendChild(btnRow);
+    }
+    
+    const outputNode = document.createElement('output');
+    bodyDiv.appendChild(outputNode);
+    msgDiv.appendChild(bodyDiv);
+    
+    if (text) {
+        formatContent(text, outputNode);
+    }
+    
+    // --- MEDIA & FOOTER ---
+    if (files.length > 0) {
+        // ... (Insert your existing media scroll logic here inside bodyDiv)
+    }
+    
+    if (type === 'ai-msg') {
+        const footer = document.createElement('div');
+        footer.className = 'msg-footer';
+        footer.innerHTML = `
+            <div class="msg-actions">
+                <button class="action-btn" onclick="toggleFeedback(this, 'like')">👍</button>
+                <button class="action-btn" onclick="toggleFeedback(this, 'dislike')">👎</button>
+                <button class="action-btn" onclick="copyToClipboard(null, this)">📋</button>
+                <button class="action-btn" onclick="shareResponse(null)">🔗</button>
+            </div>`;
+        msgDiv.appendChild(footer);
+    }
+    
+    display.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+    return outputNode;
+}
+function processElementaContent(text, target) {
+    target.innerHTML = '';
+    const segments = text.split('```');
+    segments.forEach((seg, i) => {
+        if (i % 2 === 1) {
+            // It's a code block: Extract and Highlight
+            const lines = seg.split('\n');
+            const lang = lines[0].trim() || 'code';
+            const code = lines.slice(1).join('\n').trim();
+            const pre = document.createElement('pre');
+            const codeEl = document.createElement('code');
+            
+            // Syntax Suture
+            let html = escapeHTML(code);
+            html = html.replace(/\b(function|const|let|var|if|return|async|await|class)\b/g, '<span class="hl-keyword">$1</span>');
+            html = html.replace(/(['"`])(.*?)\1/g, '<span class="hl-string">$&</span>');
+            
+            codeEl.innerHTML = html;
+            pre.appendChild(codeEl);
+            target.appendChild(wrapCollapsible(pre, `Source: ${lang}`));
+        } else {
+            // Text: Bulletins and Bolding
+            const lines = seg.split('\n');
+            lines.forEach(l => {
+                if (!l.trim()) return;
+                const p = document.createElement('p');
+                p.innerHTML = l.trim()
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/`(.*?)`/g, '<code class="inline-code">$1</code>');
+                target.appendChild(p);
+            });
+        }
+    });
+}
+
+function escapeHTML(s) {
+    return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+}
+
+async function callGemini(prompt) {
+    const key = localStorage.getItem('elementa_api_key');
+    // Retrieve the user-selected model from storage
+    const model = localStorage.getItem('elementa_model_choice') || 'gemini-3.1-flash-lite-preview';
+    
+    if (!key) {
+        throw new Error("Missing API Key. Check Settings.");
+    }
+
+    // Surgical Edit: Dynamic model insertion in the URL
+    const URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+
+    const response = await fetch(URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    });
+
+    if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error?.message || "API Request Failed");
+    }
+
+    const data = await response.json();
+    return data.candidates[0].content.parts[0].text;
+}
+async function sendMessage() {
+    const inputElement = document.getElementById('chatInput');
+    const text = inputElement.value.trim();
+    if (!text && stagedFiles.length === 0) return;
+    
+    // 1. Prepare file data for persistence
+    const fileData = stagedFiles.map(file => ({
+        url: URL.createObjectURL(file),
+        name: file.name,
+        type: file.type
+    }));
+    
+    // 2. Process User Message
+    processMessage(text, 'user-msg', fileData);
+
+    // 3. Reset Input UI
+    inputElement.value = '';
+    stagedFiles = [];
+    document.getElementById('uploadPreviewBar').innerHTML = '';
+    document.getElementById('uploadPreviewBar').classList.remove('active');
+    
+    // 4. Trigger AI Response
+    try {
+        const aiResponseText = await callGemini(text);
+        processMessage(aiResponseText, 'ai-msg', []);
+    } catch (error) {
+        renderMessage("Connection Error: " + error.message, 'ai-msg');
+    }
+}
+
+// Unified helper to render and save simultaneously
+function processMessage(text, type, files) {
+    renderMessage(text, type, files);
+    const key = 'chat_' + currentChatId;
+    const history = JSON.parse(localStorage.getItem(key)) || [];
+    history.push({ text, type, files });
+    localStorage.setItem(key, JSON.stringify(history));
+    renderTabs(); 
+}
+
+
+
+function toggleSpeech(btn, text) {
+    const capsule = btn.closest('.audio-controls');
+    
+    if (synth.speaking) {
+        if (synth.paused) {
+            synth.resume();
+            capsule.classList.add('playing');
+            btn.innerHTML = '⏸';
+        } else {
+            synth.pause();
+            capsule.classList.remove('playing');
+            btn.innerHTML = '▶';
+        }
+        return;
+    }
+    
+    const cleanText = text.replace(/```[\s\S]*?```/g, " [Code block] ");
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    
+    // Apply user-selected voice
+    const voiceIndex = localStorage.getItem('elementa_tts_voice') || 0;
+    if (voices[voiceIndex]) utterance.voice = voices[voiceIndex];
+    
+    utterance.onend = () => {
+        capsule.classList.remove('playing');
+        btn.innerHTML = '🔊';
+    };
+    
+    synth.speak(utterance);
+    capsule.classList.add('playing');
+    btn.innerHTML = '⏸';
+}
+
+function copyToClipboard(text, btn) {
+    let targetText = text;
+    
+    // 1. Dynamic DOM Discovery
+    if (!targetText) {
+        const messageDiv = btn.closest('.message');
+        // We look for the <output> tag we just integrated
+        const outputNode = messageDiv.querySelector('output');
+        targetText = outputNode ? outputNode.innerText : "";
+    }
+    
+    // 2. High-Precision Cleaning
+    // Removes speaker icons, play buttons, and the "Source: lang" headers
+    const cleanText = targetText.replace(/🔊|▶|⏸|Source: .*/g, '').trim();
+    
+    if (!cleanText) return;
+    
+    // 3. Robust Copy Execution
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(cleanText).then(() => {
+            showCopySuccess(btn);
+        }).catch(err => {
+            console.error('Modern Copy Failed:', err);
+            fallbackCopy(cleanText, btn);
+        });
+    } else {
+        fallbackCopy(cleanText, btn);
+    }
+}
+
+// Visual feedback logic
+function showCopySuccess(btn) {
+    const original = btn.innerHTML;
+    btn.innerHTML = '✅';
+    btn.classList.add('active');
+    setTimeout(() => {
+        btn.innerHTML = original;
+        btn.classList.remove('active');
+    }, 1500);
+}
+
+// Fallback for non-HTTPS or older Android browsers
+function fallbackCopy(text, btn) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showCopySuccess(btn);
+    } catch (err) {
+        alert("Manual copy required: Browser security blocked the action.");
+    }
+    document.body.removeChild(textArea);
+}
+
+function shareResponse(text) {
+    // Standardizing event capture for mobile precision
+    const btn = event ? event.currentTarget : null;
+    if (!btn && !text) return;
+    
+    const messageDiv = btn.closest('.message');
+    // Targets the new <output> tag we integrated into the body
+    const targetText = text || messageDiv.querySelector('output').innerText;
+    
+    // Clean text: removes UI clutter for a professional share
+    const cleanText = targetText.replace(/🔊|▶|⏸|Source: .*/g, '').trim();
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Elementa AI Insight',
+            text: cleanText,
+            url: window.location.href
+        }).catch(err => console.log("Share cancelled"));
+    } else {
+        // Fallback to your now-working copy function
+        copyToClipboard(cleanText, btn);
+        alert("Sharing not supported. Text copied to clipboard.");
+    }
+}
+
+function toggleFeedback(btn, type) {
+    const parent = btn.closest('.msg-actions');
+    // Remove active from the other thumb
+    parent.querySelectorAll('.action-btn').forEach(b => {
+        if (b !== btn && (b.innerText === '👍' || b.innerText === '👎')) {
+            b.classList.remove('active');
+            b.style.filter = 'grayscale(1)';
+            b.style.opacity = '0.5';
+        }
+    });
+    
+    const isActive = btn.classList.toggle('active');
+    btn.style.filter = isActive ? 'grayscale(0)' : 'grayscale(1)';
+    btn.style.opacity = isActive ? '1' : '0.5';
+}
+
+
+window.onload = () => {
+    loadAllSettings();
+    renderTabs();
+    switchChat(currentChatId);
+};
+window.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+window.addEventListener('touchend', (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const deltaX = touchEndX - touchStartX;
+    const edgeMargin = 40;
+    
+    // Swipe Right from edge -> Open Left
+    if (deltaX > 80 && touchStartX < edgeMargin) {
+        toggleDrawer('left');
+    }
+    // Swipe Left from edge -> Open Right
+    if (deltaX < -80 && touchStartX > window.innerWidth - edgeMargin) {
+        toggleDrawer('right');
+    }
+    // Close if swiping inward while a drawer is open
+    if (Math.abs(deltaX) > 80) {
+        if (deltaX < 0 && drawerL.classList.contains('open')) closeAllDrawers();
+        if (deltaX > 0 && drawerR.classList.contains('open')) closeAllDrawers();
+    }
+}, { passive: true });
+
+
+
+ 
+
+
+</script>
+</body>
+</html>
+
+
