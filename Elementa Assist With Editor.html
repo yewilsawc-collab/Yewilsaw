@@ -149,20 +149,55 @@
         </main>
 
         <!-- RIGHT SIDEBAR -->
-        <aside id="rightSidebar" class="fixed inset-y-0 right-0 w-[85vw] max-w-sm glass border-l z-50 transform translate-x-full drawer-transition flex flex-col">
-            <div class="p-6 border-b border-black/5 flex items-center justify-between">
-                <h3 class="font-black">Settings</h3>
-                <button onclick="toggleRight(false)"><i data-lucide="x"></i></button>
-            </div>
-            <div class="p-6 space-y-6">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">API Key</label>
-                    <input type="password" id="geminiKey" class="w-full p-3 bg-slate-100 rounded-xl text-sm outline-none" placeholder="Paste key...">
-                    <button onclick="saveApiKey()" class="w-full mt-2 bg-blue-600 text-white p-3 rounded-xl text-xs font-bold">SAVE KEY</button>
-                </div>
-            </div>
-        </aside>
+        
+<aside id="rightSidebar" class="fixed inset-y-0 right-0 w-[85vw] max-w-sm glass border-l z-50 transform translate-x-full drawer-transition flex flex-col">
+    <div class="p-6 border-b border-black/5 flex items-center justify-between">
+        <h3 class="font-black">Settings</h3>
+        <button onclick="toggleRight(false)"><i data-lucide="x"></i></button>
+    </div>
+    
+    <div class="p-6 space-y-8 overflow-y-auto">
+        <section>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Gemini API Key</label>
+            <input type="password" id="geminiKey" class="w-full p-3 bg-slate-100 rounded-xl text-sm outline-none mb-2" placeholder="Paste key...">
+            
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Model Selection</label>
+            <select id="modelSelect" class="w-full p-3 bg-slate-100 rounded-xl text-sm outline-none">
+                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Fast)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Complex)</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-3.1-pro-previee">Gemini 3.1 Pro Preview</option>
+                <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+            <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite Preview</option>
+                <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                <option value="gemini-3-flash-lite-preview">Gemini 3 Flash Lite Preview</option>
+            </select>
+            </select>
+            <button onclick="saveSettings()" class="w-full mt-3 bg-blue-600 text-white p-3 rounded-xl text-xs font-bold">SAVE CONFIG</button>
+        </section>
 
+        <section>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Theme</label>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="setTheme('light')" class="p-2 border rounded-lg text-[10px] font-bold bg-white">LIGHT</button>
+                <button onclick="setTheme('dark')" class="p-2 border rounded-lg text-[10px] font-bold bg-slate-800 text-white">DARK</button>
+                <button onclick="setTheme('ocean')" class="p-2 border rounded-lg text-[10px] font-bold bg-blue-900 text-white">OCEAN</button>
+            </div>
+        </section>
+
+        <section>
+            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Voice Assistant (TTS)</label>
+            <select id="voiceSelect" class="w-full p-3 bg-slate-100 rounded-xl text-sm outline-none mb-2">
+                <option value="">Select a Voice...</option>
+            </select>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="autoTTS" class="rounded">
+                <span class="text-xs text-slate-500">Auto-read AI responses</span>
+            </div>
+        </section>
+    </div>
+</aside>
         <div id="overlay" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden" onclick="closeAll()"></div>
     </div>
 
@@ -185,8 +220,32 @@
         const db = getFirestore(app);
         const appId = "ai-outreach-workspace";
 
-        let geminiKey = localStorage.getItem('GEMINI_API_KEY') || "";
+        // Initialize Settings
+let currentModel = localStorage.getItem('ELEMENTA_MODEL') || 'gemini-3.1-flash-lite-preview';
 
+window.saveSettings = () => {
+    geminiKey = document.getElementById('geminiKey').value;
+    currentModel = document.getElementById('modelSelect').value;
+    localStorage.setItem('GEMINI_API_KEY', geminiKey);
+    localStorage.setItem('ELEMENTA_MODEL', currentModel);
+    alert("Configuration Saved");
+};
+
+window.setTheme = (theme) => {
+    const body = document.body;
+    body.classList.remove('dark-theme', 'ocean-theme'); // Clear previous
+    if(theme === 'dark') {
+        body.style.backgroundColor = '#0f172a';
+        body.classList.add('text-white');
+    } else if (theme === 'ocean') {
+        body.style.backgroundColor = '#1e3a8a';
+        body.classList.add('text-white');
+    } else {
+        body.style.backgroundColor = '#f5f7fa';
+        body.classList.remove('text-white');
+    }
+    localStorage.setItem('ELEMENTA_THEME', theme);
+};
         window.onload = () => {
             lucide.createIcons();
             document.getElementById('geminiKey').value = geminiKey;
@@ -224,6 +283,29 @@
             document.getElementById('exitFullscreenBtn').classList.toggle('hidden', !enable);
             lucide.createIcons();
         };
+        const synth = window.speechSynthesis;
+let voices = [];
+
+function populateVoiceList() {
+    voices = synth.getVoices();
+    const select = document.getElementById('voiceSelect');
+    select.innerHTML = voices.map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`).join('');
+}
+
+// Initial load for voices
+populateVoiceList();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
+window.speak = (text) => {
+    if (synth.speaking) synth.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    const selectedVoice = voices.find(v => v.name === document.getElementById('voiceSelect').value);
+    if (selectedVoice) utter.voice = selectedVoice;
+    synth.speak(utter);
+};
+        
 
         window.handleAction = async () => {
             const input = document.getElementById('chatInput');
@@ -249,7 +331,8 @@
 
             try {
                 const isCodeRequest = text.toLowerCase().includes('page') || text.toLowerCase().includes('code') || text.toLowerCase().includes('site') || text.toLowerCase().includes('canvas');
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${geminiKey
+                
                 
                 const prompt = isCodeRequest 
                     ? `Create a modern, beautiful HTML/Tailwind page based on: "${text}". Respond ONLY with the code.`
@@ -267,7 +350,20 @@
                     const cleanCode = aiResponse.replace(/```html|```/g, '').trim();
                     const blob = new Blob([cleanCode], { type: 'text/html' });
                     const blobUrl = URL.createObjectURL(blob);
-                    
+                    // Inside the try block where aiResponse is received:
+
+    // ... existing code logic ...
+} else {
+    const safeAiResponse = escapeHtml(aiResponse); // Escape for security
+    list.innerHTML += `<div class="flex justify-start">
+        <div class="chat-bubble-ai bg-white border border-slate-200 shadow-sm p-5 text-sm text-slate-700">
+            ${aiResponse} 
+            <button onclick="speak('${aiResponse.replace(/'/g, "\\'")}')" class="ml-2 text-blue-500"><i data-lucide="volume-2" class="w-3 h-3 inline"></i></button>
+        </div>
+    </div>`;
+
+    if(document.getElementById('autoTTS').checked) speak(aiResponse);
+}
                     list.innerHTML += `
                         <div class="flex justify-start">
                             <div class="chat-bubble-ai bg-white border border-slate-200 shadow-sm p-4 w-full">
@@ -321,6 +417,11 @@
                 });
             });
         }
+        const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+};
 
         window.toggleLeft = (s) => {
             document.getElementById('leftSidebar').classList.toggle('-translate-x-full', !s);
