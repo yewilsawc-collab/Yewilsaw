@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Elementa Assist</title>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .drawer-transition {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #canvasPreview, .inline-preview-iframe {
+            background: white;
+            border-radius: 12px;
+        }
+
+        /* Full Screen Preview Mode */
+        .fullscreen-preview #canvasArea { flex-direction: column; }
+        .fullscreen-preview #canvasEditorContainer { display: none; }
+        .fullscreen-preview #canvasPreviewContainer { 
+            position: fixed; 
+            inset: 0; 
+            z-index: 100; 
+            padding: 0; 
+            background: white;
+        }
+        .fullscreen-preview #canvasPreview { border-radius: 0; }
+        .fullscreen-preview header, .fullscreen-preview #inputContainer { display: none; }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 1024px) {
+            .canvas-split { flex-direction: column; }
+            #canvasEditorContainer { height: 40%; }
+            #canvasPreviewContainer { height: 60%; }
+        }
+
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+        
+        .chat-bubble-ai {
+            max-width: 95%;
+            border-radius: 20px 20px 20px 4px;
+        }
+    </style>
+</head>
+<body class="bg-[#f5f7fa] text-slate-900 transition-colors duration-500">
+    
+    <div class="h-[100dvh] flex relative z-10 overflow-hidden">
+        
+        <!-- LEFT SIDEBAR -->
+        <aside id="leftSidebar" class="fixed inset-y-0 left-0 w-[85vw] max-w-sm glass border-r z-50 transform -translate-x-full lg:relative lg:translate-x-0 lg:w-80 drawer-transition flex flex-col">
+            <div class="p-6 space-y-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 text-blue-600 font-extrabold text-xl">
+                        <div class="p-2 bg-blue-600 rounded-xl text-white shadow-lg"><i data-lucide="layout" class="w-5 h-5"></i></div>
+                        <span>Elementa OS</span>
+                    </div>
+                    <button class="lg:hidden p-2" onclick="toggleLeft(false)"><i data-lucide="x"></i></button>
+                </div>
+                
+                <nav class="space-y-1">
+                    <button onclick="setView('chat')" id="navChat" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all bg-blue-50 text-blue-600">
+                        <i data-lucide="message-square" class="w-5 h-5"></i> Chat Logs
+                    </button>
+                    <button onclick="setView('canvas')" id="navCanvas" class="w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all text-slate-500 hover:bg-slate-100">
+                        <i data-lucide="pen-tool" class="w-5 h-5"></i> Code Canvas
+                    </button>
+                </nav>
+            </div>
+
+            <div id="logContainer" class="flex-1 overflow-y-auto px-4 pb-4 space-y-1"></div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 flex flex-col relative h-full overflow-hidden">
+            <header class="h-16 lg:h-20 glass flex items-center justify-between px-4 lg:px-8 z-30">
+                <div class="flex items-center gap-3">
+                    <button class="lg:hidden p-2 text-slate-500" onclick="toggleLeft(true)"><i data-lucide="menu"></i></button>
+                    <h1 id="viewTitle" class="font-bold text-base lg:text-lg">Elementa Assist</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleRight(true)" class="p-2.5 rounded-xl bg-slate-100 text-slate-600"><i data-lucide="settings" class="w-5 h-5"></i></button>
+                </div>
+            </header>
+
+            <!-- CHAT VIEW -->
+            <div id="chatArea" class="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 pb-32">
+                <div id="welcomeScreen" class="max-w-xl mx-auto text-center py-12">
+                    <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-xl mb-6 text-white"><i data-lucide="sparkles" class="w-10 h-10"></i></div>
+                    <h2 class="text-3xl font-black mb-2">Hello</h2>
+                    <p class="text-slate-500 mb-8">How May I Help You</p>
+                </div>
+                <div id="messagesList" class="max-w-3xl mx-auto space-y-6 hidden"></div>
+            </div>
+
+            <!-- CANVAS VIEW -->
+            <div id="canvasArea" class="flex-1 hidden flex-col lg:flex-row overflow-hidden canvas-split">
+                <div id="canvasEditorContainer" class="flex-1 flex flex-col border-r border-slate-200 bg-slate-900">
+                    <div class="h-10 bg-slate-800 flex items-center justify-between px-4 text-slate-400">
+                        <span class="text-[10px] font-bold tracking-widest uppercase">Editor</span>
+                        <button onclick="updatePreview()" class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded">RUN</button>
+                    </div>
+                    <textarea id="codeEditor" class="flex-1 w-full p-4 bg-transparent text-blue-300 code-font text-sm outline-none resize-none" spellcheck="false" oninput="updatePreview()"></textarea>
+                </div>
+                <div id="canvasPreviewContainer" class="flex-1 flex flex-col bg-slate-100 p-2 lg:p-4 transition-all duration-300">
+                    <div class="h-10 flex items-center px-4 justify-between bg-white/50 rounded-t-xl border-b border-slate-200">
+                        <div class="flex items-center gap-2">
+                             <button id="exitFullscreenBtn" onclick="toggleFullscreenPreview(false)" class="hidden text-slate-600 hover:text-blue-600 mr-2"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                             <span class="text-[10px] font-bold text-slate-400 uppercase">Live Preview</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="toggleFullscreenPreview(true)" id="fullscreenBtn" class="text-slate-400 hover:text-blue-500" title="Full Screen"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+                            <button onclick="popOutPreview()" class="text-slate-400 hover:text-blue-500"><i data-lucide="external-link" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <iframe id="canvasPreview" class="flex-1 w-full bg-white rounded-b-xl border-none"></iframe>
+                </div>
+            </div>
+
+            <!-- SHARED INPUT BAR -->
+            <div id="inputContainer" class="fixed bottom-0 left-0 right-0 p-3 lg:p-6 lg:static z-40 bg-gradient-to-t from-[#f5f7fa] to-transparent">
+                <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-1.5 safe-pb flex items-end gap-2 px-2 py-1">
+                    <textarea id="chatInput" placeholder="Message AI or code..." rows="1" class="flex-1 bg-transparent py-3 px-2 outline-none resize-none font-medium text-slate-700 max-h-32 min-h-[44px]"></textarea>
+                    <button id="actionBtn" onclick="handleAction()" class="p-3.5 bg-blue-600 text-white rounded-xl shadow-lg"><i data-lucide="send" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside id="rightSidebar" class="fixed inset-y-0 right-0 w-[85vw] max-w-sm glass border-l z-50 transform translate-x-full drawer-transition flex flex-col">
+            <div class="p-6 border-b border-black/5 flex items-center justify-between">
+                <h3 class="font-black">Settings</h3>
+                <button onclick="toggleRight(false)"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">API Key</label>
+                    <input type="password" id="geminiKey" class="w-full p-3 bg-slate-100 rounded-xl text-sm outline-none" placeholder="Paste key...">
+                    <button onclick="saveApiKey()" class="w-full mt-2 bg-blue-600 text-white p-3 rounded-xl text-xs font-bold">SAVE KEY</button>
+                </div>
+            </div>
+        </aside>
+
+        <div id="overlay" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 hidden" onclick="closeAll()"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
+            authDomain: "university-outreach-log.firebaseapp.com",
+            projectId: "university-outreach-log",
+            storageBucket: "university-outreach-log.firebasestorage.app",
+            messagingSenderId: "566149647802",
+            appId: "1:566149647802:web:490c7cc3d10b7cd7732183"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "ai-outreach-workspace";
+
+        let geminiKey = localStorage.getItem('GEMINI_API_KEY') || "";
+
+        window.onload = () => {
+            lucide.createIcons();
+            document.getElementById('geminiKey').value = geminiKey;
+            signInAnonymously(auth).catch(console.error);
+            onAuthStateChanged(auth, user => { if(user) setupListeners(); });
+            
+            const tx = document.getElementById('chatInput');
+            tx.addEventListener("input", function() {
+                this.style.height = "auto";
+                this.style.height = (this.scrollHeight) + "px";
+            });
+        };
+
+        window.setView = (view) => {
+            const isCanvas = view === 'canvas';
+            document.getElementById('navChat').className = `w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${!isCanvas ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`;
+            document.getElementById('navCanvas').className = `w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${isCanvas ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`;
+            document.getElementById('chatArea').classList.toggle('hidden', isCanvas);
+            document.getElementById('canvasArea').classList.toggle('hidden', !isCanvas);
+            document.getElementById('viewTitle').innerText = isCanvas ? "Code Canvas" : "Assistant Chat";
+            toggleFullscreenPreview(false);
+            toggleLeft(false);
+        };
+
+        window.updatePreview = () => {
+            const code = document.getElementById('codeEditor').value;
+            const iframe = document.getElementById('canvasPreview');
+            const blob = new Blob([code], { type: 'text/html' });
+            iframe.src = URL.createObjectURL(blob);
+        };
+
+        window.toggleFullscreenPreview = (enable) => {
+            document.body.classList.toggle('fullscreen-preview', enable);
+            document.getElementById('fullscreenBtn').classList.toggle('hidden', enable);
+            document.getElementById('exitFullscreenBtn').classList.toggle('hidden', !enable);
+            lucide.createIcons();
+        };
+
+        window.handleAction = async () => {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            const list = document.getElementById('messagesList');
+            list.classList.remove('hidden');
+            
+            list.innerHTML += `<div class="flex justify-end"><div class="p-4 bg-blue-600 text-white rounded-2xl rounded-br-none text-sm font-medium">${text}</div></div>`;
+            input.value = "";
+            input.style.height = "auto";
+            
+            const typingId = 't-' + Date.now();
+            list.innerHTML += `<div id="${typingId}" class="flex gap-1 p-4 bg-white rounded-2xl w-fit shadow-sm"><div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div><div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay:0.2s"></div></div>`;
+            list.lastElementChild.scrollIntoView({behavior:'smooth'});
+
+            if (!geminiKey) {
+                document.getElementById(typingId).innerHTML = "Set your Gemini API Key in Settings to enable AI features.";
+                return;
+            }
+
+            try {
+                const isCodeRequest = text.toLowerCase().includes('page') || text.toLowerCase().includes('code') || text.toLowerCase().includes('site') || text.toLowerCase().includes('canvas');
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiKey}`;
+                
+                const prompt = isCodeRequest 
+                    ? `Create a modern, beautiful HTML/Tailwind page based on: "${text}". Respond ONLY with the code.`
+                    : `Respond as a recruitment assistant: ${text}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const res = await response.json();
+                let aiResponse = res.candidates?.[0]?.content?.parts?.[0]?.text || "Error processing request.";
+                document.getElementById(typingId).remove();
+
+                if (isCodeRequest) {
+                    const cleanCode = aiResponse.replace(/```html|```/g, '').trim();
+                    const blob = new Blob([cleanCode], { type: 'text/html' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    list.innerHTML += `
+                        <div class="flex justify-start">
+                            <div class="chat-bubble-ai bg-white border border-slate-200 shadow-sm p-4 w-full">
+                                <p class="text-xs font-bold text-slate-400 mb-3 uppercase flex items-center gap-2">
+                                    <i data-lucide="monitor" class="w-3 h-3"></i> Inline Preview
+                                </p>
+                                <div class="relative w-full aspect-video border border-slate-100 rounded-xl overflow-hidden mb-3">
+                                    <iframe src="${blobUrl}" class="w-full h-full inline-preview-iframe pointer-events-none"></iframe>
+                                    <div class="absolute inset-0 bg-transparent"></div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="openInCanvas(\`${cleanCode.replace(/`/g, "\\`").replace(/\$/g, "\\$")}\`)" class="flex-1 bg-blue-600 text-white text-[10px] font-bold py-2 rounded-lg">EDIT & FULL PREVIEW</button>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    list.innerHTML += `<div class="flex justify-start"><div class="chat-bubble-ai bg-white border border-slate-200 shadow-sm p-5 text-sm text-slate-700">${aiResponse}</div></div>`;
+                }
+            } catch(e) { 
+                document.getElementById(typingId).innerHTML = "Failed to fetch response.";
+            }
+            lucide.createIcons();
+            list.lastElementChild.scrollIntoView({behavior:'smooth'});
+        };
+
+        window.openInCanvas = (code) => {
+            document.getElementById('codeEditor').value = code;
+            setView('canvas');
+            updatePreview();
+        };
+
+        window.popOutPreview = () => {
+            const code = document.getElementById('codeEditor').value;
+            const win = window.open();
+            win.document.write(code);
+            win.document.close();
+        };
+
+        window.saveApiKey = () => {
+            geminiKey = document.getElementById('geminiKey').value;
+            localStorage.setItem('GEMINI_API_KEY', geminiKey);
+            alert("API Key Saved");
+        };
+
+        function setupListeners() {
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'logs')), (snap) => {
+                const container = document.getElementById('logContainer');
+                container.innerHTML = `<p class="px-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6 mb-2">Logs</p>`;
+                snap.docs.sort((a,b) => b.data().timestamp - a.data().timestamp).forEach(doc => {
+                    container.innerHTML += `<div class="mx-4 p-3 rounded-xl hover:bg-white text-xs font-bold text-slate-600 truncate mb-1 cursor-pointer">${doc.data().title}</div>`;
+                });
+            });
+        }
+
+        window.toggleLeft = (s) => {
+            document.getElementById('leftSidebar').classList.toggle('-translate-x-full', !s);
+            document.getElementById('overlay').classList.toggle('hidden', !s);
+        };
+        window.toggleRight = (s) => {
+            document.getElementById('rightSidebar').classList.toggle('translate-x-full', !s);
+            document.getElementById('overlay').classList.toggle('hidden', !s);
+        };
+        window.closeAll = () => { toggleLeft(false); toggleRight(false); };
+    // Service worker sw.js
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW Registered'))
+        .catch(err => console.log('SW Failed', err));
+    });
+  }
+
+    
+    </script>
+</body>
+</html>
