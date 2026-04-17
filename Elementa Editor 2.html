@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Elementa Pro | Advanced Mobile IDE</title>
+    <style>
+        :root {
+            --jelly-bg: rgba(255, 255, 255, 0.1);
+            --jelly-border: rgba(255, 255, 255, 0.2);
+            --accent: #00f2ff;
+            --bg-dark: #050505;
+            --tab-inactive: rgba(255, 255, 255, 0.05);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0;
+            background: var(--bg-dark);
+            color: #fff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Jellymorphic Search Bar --- */
+        .search-container {
+            padding: 12px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+        }
+
+        .search-glass {
+            display: flex;
+            align-items: center;
+            background: var(--jelly-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--jelly-border);
+            border-radius: 20px;
+            padding: 0 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            height: 45px;
+            font-size: 16px; /* Prevents iOS zoom */
+            outline: none;
+        }
+
+        .search-ui-lock {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 100px; /* Precision: UI will not jump */
+            justify-content: flex-end;
+            border-left: 1px solid var(--jelly-border);
+            padding-left: 10px;
+        }
+
+        .counter {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        .arrow-btn {
+            cursor: pointer;
+            font-size: 18px;
+            color: rgba(255,255,255,0.6);
+            transition: color 0.2s;
+        }
+
+        .arrow-btn:active { color: var(--accent); }
+
+        /* --- Tab System --- */
+        #tab-strip {
+            display: flex;
+            overflow-x: auto;
+            padding: 0 10px 10px 10px;
+            gap: 8px;
+            scrollbar-width: none;
+        }
+        #tab-strip::-webkit-scrollbar { display: none; }
+
+        .tab {
+            padding: 10px 18px;
+            background: var(--tab-inactive);
+            border: 1px solid var(--jelly-border);
+            border-radius: 14px;
+            font-size: 13px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: #000;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+            border-color: var(--accent);
+        }
+
+        .tab.pinned { border: 2px solid var(--accent); }
+
+        /* --- Editor Area --- */
+        #editor-main {
+            flex: 1;
+            position: relative;
+            background: rgba(255,255,255,0.02);
+            margin: 0 10px 10px 10px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--jelly-border);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            padding: 20px;
+            color: #d1d1d1;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            outline: none;
+            resize: none;
+        }
+
+        /* --- Controls --- */
+        .fab-group {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 500;
+        }
+
+        .fab {
+            width: 56px;
+            height: 56px;
+            border-radius: 20px;
+            background: var(--accent);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0, 242, 255, 0.4);
+            font-size: 24px;
+        }
+
+        /* --- Sandbox Modal --- */
+        #sandbox-layer {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .sandbox-header {
+            padding: 15px;
+            background: #111;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="search-container">
+    <div class="search-glass">
+        <input type="text" id="searchInput" class="search-input" placeholder="Live search code...">
+        <div class="search-ui-lock">
+            <span class="arrow-btn" onclick="moveSearch(-1)">▲</span>
+            <span class="arrow-btn" onclick="moveSearch(1)">▼</span>
+            <span id="matchCounter" class="counter">0/0</span>
+        </div>
+    </div>
+</div>
+
+<div id="tab-strip"></div>
+
+<div id="editor-main">
+    <textarea id="codeEngine" spellcheck="false" placeholder="// Initializing Elementa OS..."></textarea>
+</div>
+
+<div class="fab-group">
+    <button class="fab" onclick="exportProject()">⤓</button>
+    <button class="fab" onclick="launchSandbox()">▶</button>
+</div>
+
+<div id="sandbox-layer">
+    <div class="sandbox-header">
+        <span>Live Preview</span>
+        <button onclick="closeSandbox()" style="background:var(--accent); border:none; padding:5px 15px; border-radius:10px;">Exit</button>
+    </div>
+    <iframe id="previewFrame" style="flex:1; border:none; background:#fff;"></iframe>
+</div>
+
+<script>
+    /**
+     * ELEMENTA CORE ENGINE
+     * Offline-First / High-Precision / Vanilla JS
+     */
+
+    let db;
+    let currentFile = 'index.html';
+    let searchResults = [];
+    let searchIndex = 0;
+
+    // 1. ASYNC BOOTSEQUENCE
+    async function boot() {
+        try {
+            db = await initDB();
+            await syncState();
+            renderTabs();
+            await loadFile(currentFile);
+        } catch (err) {
+            console.error("Boot Failure:", err);
+        }
+    }
+
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open("ElementaFS", 1);
+            req.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                database.createObjectStore("files", { keyPath: "name" });
+            };
+            req.onsuccess = (e) => resolve(e.target.result);
+            req.onerror = (e) => reject(e);
+        });
+    }
+
+    // 2. STATE & PERSISTENCE
+    async function syncState() {
+        // Load tab manifest from LocalStorage
+        const saved = localStorage.getItem('elementa_tabs');
+        if (saved) {
+            window.fileManifest = JSON.parse(saved);
+        } else {
+            window.fileManifest = [
+                { name: 'index.html', pinned: false },
+                { name: 'style.css', pinned: false }
+            ];
+            // Seed initial data
+            await saveToDB('index.html', '<h1>Hello Elementa</h1>');
+            await saveToDB('style.css', 'body { background: #000; color: #00f2ff; }');
+        }
+    }
+
+    async function saveToDB(name, content) {
+        const tx = db.transaction("files", "readwrite");
+        tx.objectStore("files").put({ name, content, ts: Date.now() });
+        return new Promise(r => tx.oncomplete = r);
+    }
+
+    async function getFromDB(name) {
+        const tx = db.transaction("files", "readonly");
+        const req = tx.objectStore("files").get(name);
+        return new Promise(r => req.onsuccess = () => r(req.result));
+    }
+
+    // 3. UI RENDERING
+    function renderTabs() {
+        const strip = document.getElementById('tab-strip');
+        strip.innerHTML = '';
+        window.fileManifest.sort((a,b) => b.pinned - a.pinned).forEach(file => {
+            const div = document.createElement('div');
+            div.className = `tab ${file.name === currentFile ? 'active' : ''} ${file.pinned ? 'pinned' : ''}`;
+            div.innerHTML = `<span>${file.name}</span>`;
+            
+            div.onclick = () => switchTab(file.name);
+            div.oncontextmenu = (e) => {
+                e.preventDefault();
+                handleTabMenu(file.name);
+            };
+            strip.appendChild(div);
+        });
+    }
+
+    async function switchTab(name) {
+        // Save current first
+        await saveToDB(currentFile, document.getElementById('codeEngine').value);
+        currentFile = name;
+        await loadFile(name);
+        renderTabs();
+    }
+
+    async function loadFile(name) {
+        const fileData = await getFromDB(name);
+        document.getElementById('codeEngine').value = fileData ? fileData.content : '';
+        document.getElementById('codeEngine').focus();
+    }
+
+    // 4. LIVE SEARCH (Geometric Precision)
+    const searchInput = document.getElementById('searchInput');
+    const engine = document.getElementById('codeEngine');
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value;
+        if (!query) {
+            updateCounter(0,0);
+            return;
+        }
+        const text = engine.value;
+        const regex = new RegExp(query, 'gi');
+        searchResults = [...text.matchAll(regex)];
+        searchIndex = searchResults.length > 0 ? 1 : 0;
+        updateCounter(searchIndex, searchResults.length);
+        highlightInEditor();
+    });
+
+    function updateCounter(cur, total) {
+        document.getElementById('matchCounter').innerText = `${cur}/${total}`;
+    }
+
+    function moveSearch(dir) {
+        if (!searchResults.length) return;
+        searchIndex += dir;
+        if (searchIndex > searchResults.length) searchIndex = 1;
+        if (searchIndex < 1) searchIndex = searchResults.length;
+        updateCounter(searchIndex, searchResults.length);
+        highlightInEditor();
+    }
+
+    function highlightInEditor() {
+        const match = searchResults[searchIndex - 1];
+        if (match) {
+            engine.setSelectionRange(match.index, match.index + match[0].length);
+            engine.focus();
+        }
+    }
+
+    // 5. UNIVERSAL EXPORT & SANDBOX
+    async function exportProject() {
+        const customName = prompt("Universal Filename:", currentFile);
+        if (!customName) return;
+        
+        const blob = new Blob([engine.value], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = customName;
+        a.click();
+    }
+
+    async function launchSandbox() {
+        const html = (await getFromDB('index.html'))?.content || '';
+        const css = `<style>${(await getFromDB('style.css'))?.content || ''}</style>`;
+        document.getElementById('previewFrame').srcdoc = html + css;
+        document.getElementById('sandbox-layer').style.display = 'flex';
+    }
+
+    function closeSandbox() {
+        document.getElementById('sandbox-layer').style.display = 'none';
+    }
+
+    // 6. TAB CONTEXT MENU
+    function handleTabMenu(name) {
+        const action = prompt("(R)ename, (D)elete, (P)in, (C)opy");
+        if (!action) return;
+
+        const idx = window.fileManifest.findIndex(f => f.name === name);
+        const file = window.fileManifest[idx];
+
+        if (action.toLowerCase() === 'r') {
+            const nn = prompt("New Name:", name);
+            if(nn) file.name = nn;
+        } else if (action.toLowerCase() === 'p') {
+            file.pinned = !file.pinned;
+        } else if (action.toLowerCase() === 'd') {
+            window.fileManifest.splice(idx, 1);
+        }
+
+        localStorage.setItem('elementa_tabs', JSON.stringify(window.fileManifest));
+        renderTabs();
+    }
+
+    // Trigger Boot
+    window.onload = boot;
+
+    // Real-time persistence
+    engine.oninput = () => saveToDB(currentFile, engine.value);
+
+</script>
+</body>
+</html>
