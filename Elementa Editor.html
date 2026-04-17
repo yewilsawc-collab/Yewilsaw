@@ -1,0 +1,628 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Elementa Advanced IDE</title>
+    <style>
+        :root {
+            --jelly-bg: rgba(255, 255, 255, 0.1);
+            --jelly-border: rgba(255, 255, 255, 0.2);
+            --jelly-blur: blur(15px);
+            --accent: #00f2ff;
+            --text: #ffffff;
+            --bg: #0a0b10;
+            --tab-inactive: rgba(255, 255, 255, 0.05);
+            --tab-active: rgba(255, 255, 255, 0.2);
+        }
+
+* {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+/ --- Jellymorphism UI Components --- /
+        .jelly-container {
+            background: var(--jelly-bg);
+            backdrop-filter: var(--jelly-blur);
+            -webkit-backdrop-filter: var(--jelly-blur);
+            border: 1px solid var(--jelly-border);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+/ --- Header & Search Bar --- /
+        header {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+.search-wrapper {
+            display: flex;
+            align-items: center;
+            height: 48px;
+            padding: 0 15px;
+            gap: 10px;
+        }
+
+.search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+.search-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            width: 100px; / Layout Stability: Fixed width area /
+            justify-content: flex-end;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+.nav-btn {
+            background: var(--tab-active);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+
+/ --- Tab Bar --- /
+        .tab-bar {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 5px 10px;
+            gap: 8px;
+            scrollbar-width: none;
+        }
+
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.tab {
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: var(--tab-inactive);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            font-size: 14px;
+        }
+
+.tab.active {
+            background: var(--tab-active);
+            border-color: var(--accent);
+        }
+
+.tab.pinned {
+            border-left: 4px solid var(--accent);
+            background: rgba(0, 242, 255, 0.1);
+        }
+
+/ --- Editor Area --- /
+        .main-editor-container {
+            flex: 1;
+            position: relative;
+            margin: 0 10px 10px 10px;
+        }
+
+#editor {
+            width: 100%;
+            height: 100%;
+            background: var(--jelly-bg);
+            backdrop-filter: var(--jelly-blur);
+            border: 1px solid var(--jelly-border);
+            border-radius: 20px;
+            color: #d4d4d4;
+            padding: 15px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+        }
+
+/ --- Action Bar --- /
+        .action-bar {
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+.btn {
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: none;
+            background: var(--jelly-bg);
+            color: white;
+            backdrop-filter: var(--jelly-blur);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+.btn-run { background: #2ecc71; color: white; }
+
+/ --- Sandbox & Modals --- /
+        #sandbox-container {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 1000;
+        }
+
+#sandbox-iframe {
+            width: 100%; height: calc(100% - 50px);
+            border: none; background: white;
+        }
+
+.modal {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            z-index: 2000;
+            padding: 20px;
+            display: none;
+        }
+
+.overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1999;
+            display: none;
+        }
+
+.input-group {
+            margin-bottom: 15px;
+        }
+
+.input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+.modal-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--jelly-border);
+            background: rgba(0,0,0,0.2);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+        <div class="search-wrapper jelly-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search in file...">
+            <div class="search-controls">
+                <span id="matchCounter">0 / 0</span>
+                <button class="nav-btn" onclick="ide.searchPrev()">▲</button>
+                <button class="nav-btn" onclick="ide.searchNext()">▼</button>
+            </div>
+        </div>
+        <div class="tab-bar" id="tabBar">
+            <!-- Tabs injected via JS -->
+        </div>
+    </header>
+
+<div class="main-editor-container">
+        <textarea id="editor" spellcheck="false" placeholder="Select a file or create a new one..."></textarea>
+    </div>
+
+<div class="action-bar">
+        <button class="btn" onclick="ide.createNewFile()">+ New</button>
+        <button class="btn btn-run" onclick="ide.toggleSandbox()">▶ Run</button>
+        <button class="btn" onclick="ide.showExportModal()">↑ Export</button>
+        <button class="btn" onclick="ide.pinCurrentTab()">📌 Pin</button>
+        <button class="btn" onclick="ide.renameCurrentTab()">✎ Rename</button>
+        <button class="btn" style="background: #e74c3c;" onclick="ide.deleteCurrentTab()">🗑 Delete</button>
+    </div>
+
+<!-- Modals -->
+    <div class="overlay" id="overlay"></div>
+    
+    <div class="modal jelly-container" id="exportModal">
+        <h3>Universal Export</h3>
+        <div class="input-group">
+            <label>Filename</label>
+            <input type="text" id="expName" class="modal-input" placeholder="project-v1">
+        </div>
+        <div class="input-group">
+            <label>Extension</label>
+            <input type="text" id="expExt" class="modal-input" placeholder=".app">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-run" style="flex:1" onclick="ide.performUniversalExport()">Download</button>
+            <button class="btn" onclick="ide.closeModals()">Cancel</button>
+        </div>
+    </div>
+
+<!-- Execution Sandbox -->
+    <div id="sandbox-container">
+        <div style="height: 50px; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; border-bottom: 1px solid #333;">
+            <span style="font-weight: bold;">Preview Sandbox</span>
+            <button class="btn" onclick="ide.toggleSandbox()" style="padding: 5px 15px;">Close</button>
+        </div>
+        <iframe id="sandbox-iframe"></iframe>
+    </div>
+
+<script>
+        /
+         * ELEMENTA CORE ENGINE
+         * High-precision logic for mobile IDE operations.
+         */
+
+class ElementaIDE {
+            constructor() {
+                this.db = null;
+                this.files = [];
+                this.activeFileId = null;
+                this.searchResults = [];
+                this.currentMatchIndex = -1;
+                this.init();
+            }
+
+async init() {
+                await this.initDB();
+                await this.loadState();
+                this.setupEventListeners();
+                this.renderTabs();
+            }
+
+// --- Storage Engine (IndexedDB) ---
+            initDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open("ElementaDB", 1);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains("files")) {
+                            db.createObjectStore("files", { keyPath: "id" });
+                        }
+                    };
+                    request.onsuccess = (e) => {
+                        this.db = e.target.result;
+                        resolve();
+                    };
+                });
+            }
+
+async saveFileToDB(file) {
+                const tx = this.db.transaction("files", "readwrite");
+                tx.objectStore("files").put(file);
+                return new Promise(r => tx.oncomplete = r);
+            }
+
+async loadFilesFromDB() {
+                return new Promise((resolve) => {
+                    const tx = this.db.transaction("files", "readonly");
+                    const req = tx.objectStore("files").getAll();
+                    req.onsuccess = () => resolve(req.result || []);
+                });
+            }
+
+// --- State Management ---
+            async loadState() {
+                this.files = await this.loadFilesFromDB();
+                const savedState = JSON.parse(localStorage.getItem('elementa_state') || '{}');
+                
+                if (this.files.length === 0) {
+                    await this.createNewFile('index.html', '<h1>Hello Elementa</h1>');
+                }
+
+this.activeFileId = savedState.activeFileId || this.files[0].id;
+                this.applyTabSorting();
+                this.loadActiveFileIntoEditor();
+            }
+
+saveUIState() {
+                const state = {
+                    activeFileId: this.activeFileId,
+                    pinnedIds: this.files.filter(f => f.pinned).map(f => f.id)
+                };
+                localStorage.setItem('elementa_state', JSON.stringify(state));
+            }
+
+// --- File Operations ---
+            async createNewFile(name = 'new_file.js', content = '') {
+                const file = {
+                    id: Date.now().toString(),
+                    name: name,
+                    content: content,
+                    pinned: false,
+                    lastModified: Date.now()
+                };
+                this.files.push(file);
+                await this.saveFileToDB(file);
+                this.activeFileId = file.id;
+                this.renderTabs();
+                this.loadActiveFileIntoEditor();
+            }
+
+async deleteCurrentTab() {
+                if (this.files.length <= 1) return alert("Cannot delete last file.");
+                const idx = this.files.findIndex(f => f.id === this.activeFileId);
+                const tx = this.db.transaction("files", "readwrite");
+                tx.objectStore("files").delete(this.activeFileId);
+                this.files.splice(idx, 1);
+                this.activeFileId = this.files[0].id;
+                this.renderTabs();
+                this.loadActiveFileIntoEditor();
+            }
+
+pinCurrentTab() {
+                const file = this.files.find(f => f.id === this.activeFileId);
+                if (file) {
+                    file.pinned = !file.pinned;
+                    this.saveFileToDB(file);
+                    this.applyTabSorting();
+                    this.renderTabs();
+                }
+            }
+
+renameCurrentTab() {
+                const file = this.files.find(f => f.id === this.activeFileId);
+                const newName = prompt("Enter new filename:", file.name);
+                if (newName) {
+                    file.name = newName;
+                    this.saveFileToDB(file);
+                    this.renderTabs();
+                }
+            }
+
+applyTabSorting() {
+                // Pinned files first, then by last modified
+                this.files.sort((a, b) => {
+                    if (a.pinned && !b.pinned) return -1;
+                    if (!a.pinned && b.pinned) return 1;
+                    return b.lastModified - a.lastModified;
+                });
+            }
+
+// --- UI Rendering ---
+            renderTabs() {
+                const container = document.getElementById('tabBar');
+                container.innerHTML = '';
+                this.files.forEach(file => {
+                    const tab = document.createElement('div');
+                    tab.className = `tab jelly-container ${file.id === this.activeFileId ? 'active' : ''} ${file.pinned ? 'pinned' : ''}`;
+                    tab.innerHTML = `<span>${file.pinned ? '📌 ' : ''}${file.name}</span>`;
+                    tab.onclick = () => this.switchTab(file.id);
+                    container.appendChild(tab);
+                });
+                this.saveUIState();
+            }
+
+switchTab(id) {
+                // Save current work before switching
+                const currentFile = this.files.find(f => f.id === this.activeFileId);
+                if (currentFile) {
+                    currentFile.content = document.getElementById('editor').value;
+                    this.saveFileToDB(currentFile);
+                }
+
+this.activeFileId = id;
+                this.renderTabs();
+                this.loadActiveFileIntoEditor();
+            }
+
+loadActiveFileIntoEditor() {
+                const file = this.files.find(f => f.id === this.activeFileId);
+                const editor = document.getElementById('editor');
+                editor.value = file ? file.content : '';
+                this.resetSearch();
+            }
+
+// --- Search Logic (Non-Jumping UI) ---
+            performSearch(query) {
+                const editor = document.getElementById('editor');
+                const text = editor.value;
+                this.searchResults = [];
+                this.currentMatchIndex = -1;
+
+if (!query) {
+                    this.updateSearchUI();
+                    return;
+                }
+
+let idx = text.indexOf(query);
+                while (idx !== -1) {
+                    this.searchResults.push(idx);
+                    idx = text.indexOf(query, idx + 1);
+                }
+
+if (this.searchResults.length > 0) {
+                    this.currentMatchIndex = 0;
+                    this.highlightMatch();
+                }
+                this.updateSearchUI();
+            }
+
+highlightMatch() {
+                if (this.currentMatchIndex < 0) return;
+                const editor = document.getElementById('editor');
+                const pos = this.searchResults[this.currentMatchIndex];
+                const queryLen = document.getElementById('searchInput').value.length;
+                
+                editor.focus();
+                editor.setSelectionRange(pos, pos + queryLen);
+                
+                // Precise scroll calculation
+                const lineHeight = 21; 
+                const lines = editor.value.substr(0, pos).split("\n").length;
+                editor.scrollTop = (lines - 5) * lineHeight;
+            }
+
+searchNext() {
+                if (this.searchResults.length === 0) return;
+                this.currentMatchIndex = (this.currentMatchIndex + 1) % this.searchResults.length;
+                this.highlightMatch();
+                this.updateSearchUI();
+            }
+
+searchPrev() {
+                if (this.searchResults.length === 0) return;
+                this.currentMatchIndex = (this.currentMatchIndex - 1 + this.searchResults.length) % this.searchResults.length;
+                this.highlightMatch();
+                this.updateSearchUI();
+            }
+
+updateSearchUI() {
+                const counter = document.getElementById('matchCounter');
+                const total = this.searchResults.length;
+                const current = total > 0 ? this.currentMatchIndex + 1 : 0;
+                counter.innerText = `${current} / ${total}`;
+            }
+
+resetSearch() {
+                document.getElementById('searchInput').value = '';
+                this.searchResults = [];
+                this.currentMatchIndex = -1;
+                this.updateSearchUI();
+            }
+
+// --- Sandbox ---
+            toggleSandbox() {
+                const container = document.getElementById('sandbox-container');
+                const isActive = container.style.display === 'block';
+                
+                if (!isActive) {
+                    this.runProject();
+                    container.style.display = 'block';
+                } else {
+                    container.style.display = 'none';
+                }
+            }
+
+runProject() {
+                const iframe = document.getElementById('sandbox-iframe');
+                let html = "", css = "", js = "";
+
+// Simple bundler: finds content from any file with relevant extensions
+                this.files.forEach(f => {
+                    if (f.name.endsWith('.html')) html += f.content;
+                    if (f.name.endsWith('.css')) css += `<style>${f.content}</style>`;
+                    if (f.name.endsWith('.js')) js += `<script>${f.content}<\/script>`;
+                });
+
+// If no HTML file, use current buffer
+                if (!html) html = `<div style="color:black">${document.getElementById('editor').value}</div>`;
+
+const combined = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>${css}</head>
+                    <body>
+                        ${html}
+                        ${js}
+                    </body>
+                    </html>
+                `;
+                iframe.srcdoc = combined;
+            }
+
+// --- Export System ---
+            showExportModal() {
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('exportModal').style.display = 'block';
+                const file = this.files.find(f => f.id === this.activeFileId);
+                document.getElementById('expName').value = file.name.split('.')[0];
+                document.getElementById('expExt').value = '.' + file.name.split('.').pop();
+            }
+
+closeModals() {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('exportModal').style.display = 'none';
+            }
+
+performUniversalExport() {
+                const name = document.getElementById('expName').value || 'export';
+                const ext = document.getElementById('expExt').value || '.txt';
+                const content = document.getElementById('editor').value;
+                
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${name}${ext}`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.closeModals();
+            }
+
+// --- Event Listeners ---
+            setupEventListeners() {
+                const editor = document.getElementById('editor');
+                const searchInput = document.getElementById('searchInput');
+
+// Auto-save on input
+                editor.oninput = () => {
+                    const file = this.files.find(f => f.id === this.activeFileId);
+                    if (file) {
+                        file.content = editor.value;
+                        file.lastModified = Date.now();
+                        this.saveFileToDB(file);
+                    }
+                };
+
+// Live search
+                searchInput.oninput = (e) => {
+                    this.performSearch(e.target.value);
+                };
+
+// Prevent accidental refresh/loss
+                window.onbeforeunload = () => "Ensure your work is saved!";
+
+// Mobile Long Press Logic (Simple implementation)
+                let pressTimer;
+                const tabs = document.getElementById('tabBar');
+                tabs.addEventListener('touchstart', (e) => {
+                    pressTimer = window.setTimeout(() => {
+                        // Potential for context menu on long press
+                    }, 600);
+                });
+                tabs.addEventListener('touchend', () => clearTimeout(pressTimer));
+            }
+        }
+
+// Initialize the IDE
+        const ide = new ElementaIDE();
+    </script>
+</body>
+
+
+
