@@ -1023,21 +1023,25 @@ toggleCanvas(true);
 }
 
 
-function highlight(code) {
-if (!code) return "";
 
-return code
-// 1. Strings (Handle quotes carefully)
-.replace(/(['"`])(.*?)\1/g, '<span class="syn-str">$1$2$1</span>')
-// 2. Comments (Single line)
-.replace(/\/\/.*/g, '<span class="syn-com">$&</span>')
-// 3. Keywords
-.replace(/\b(const|let|var|if|else|for|while|return|function|class|async|await|import|export|from|new|try|catch|finally|default|case|switch)\b/g,
-'<span class="syn-key">$1</span>')
-// 4. Numbers
-.replace(/\b(\d+)\b/g, '<span class="syn-num">$1</span>')
-// 5. Function Calls/Definitions
-.replace(/\b(\w+)(?=\()/g, '<span class="syn-def">$1</span>');
+function highlight(code) {
+    if (!code) return "";
+
+    // Single Regex with Capture Groups for non-overlapping matches
+    const regex = /(".*?"|'.*?'|`.*?`|\/\/.*|\/\*[\s\S]*?\*\/)|(\b(?:const|let|var|if|else|for|while|return|function|class|async|await|import|export|new|default|typeof|instanceof)\b)|(\b\d+\b)/g;
+
+    return code.replace(regex, (match, stringOrComment, keyword, number) => {
+        if (stringOrComment) {
+            // Check if it's a comment or a string
+            if (stringOrComment.startsWith('/') ) {
+                return `<span class="syn-com">${match}</span>`;
+            }
+            return `<span class="syn-str">${match}</span>`;
+        }
+        if (keyword) return `<span class="syn-key">${match}</span>`;
+        if (number) return `<span class="syn-num">${match}</span>`;
+        return match;
+    });
 }
 
 function mdParser(text) {
