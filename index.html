@@ -1050,147 +1050,199 @@ function highlight(code) {
     });
 }
 
+function createCodeBlock(lang, code) {
+    const container = document.createElement('pre');
+    container.style.position = 'relative';
+
+    // 1. Language Label
+    const langLabel = document.createElement('div');
+    langLabel.className = 'code-lang';
+    langLabel.textContent = lang;
+    container.appendChild(langLabel);
+
+    // 2. Action Buttons Container
+    const btnGroup = document.createElement('div');
+    btnGroup.style = "position:absolute; top:5px; right:10px; display:flex; gap:10px; z-index:10;";
+
+    // Preview Button (for HTML/JS)
+    if (['html', 'javascript', 'css', 'svg'].includes(lang.toLowerCase())) {
+        const previewBtn = document.createElement('div');
+        previewBtn.className = 'code-btn';
+        previewBtn.textContent = 'PREVIEW';
+        previewBtn.onclick = () => updateCanvas(code);
+        btnGroup.appendChild(previewBtn);
+    }
+
+    // Copy Button
+    const copyBtn = document.createElement('div');
+    copyBtn.className = 'code-btn';
+    copyBtn.textContent = 'COPY';
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(code);
+        copyBtn.textContent = 'COPIED';
+        setTimeout(() => copyBtn.textContent = 'COPY', 2000);
+    };
+    btnGroup.appendChild(copyBtn);
+    container.appendChild(btnGroup);
+
+    // 3. Code Content
+    const codeTag = document.createElement('code');
+    // Using innerHTML here only because your highlight function 
+    // returns HTML spans for colors
+    codeTag.innerHTML = highlight(escapeHtml(code)); 
+    container.appendChild(codeTag);
+
+    return container;
+}
+
+// Simple Helper to prevent HTML injection
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+    
 
 
-function mdParser(text) {
-    if (!text) return "";
 
+
+function mdParserDOM(text) {
+    if (!text) return document.createDocumentFragment();
+
+    const fragment = document.createDocumentFragment();
     const lines = text.split('\n');
-    let html = "";
-    let inList = false;
-    let listType = ""; // 'ul' or 'ol'
+    
+    let container = fragment; // Default target
+    let activeList = null;
     let inCodeBlock = false;
     let codeContent = [];
     let codeLang = "";
 
-    const flushList = () => {
-        if (inList) {
-            html += `</${listType}>`;
-            inList = false;
-        }
-    };
-
-    const parseInline = (str) => {
-        return str
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // Escape
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-            .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-            .replace(/`(.*?)`/g, '<code>$1</code>') // Inline Code
-            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" style="color:var(--accent)">$1</a>'); // Links
+    // Helper to handle inline styles (Bold, Italic, Links)
+    const parseInlineToDOM = (str, element) => {
+        // We use innerHTML here only for the small, controlled inline regexes
+        element.innerHTML = str
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" style="color:var(--accent)">$1</a>');
     };
 
     for (let i = 0; i < lines.length; i++) {
-        let line = lines[i];
+        const line = lines[i];
+        const trimmed = line.trim();
 
-        // 1. Code Block Handling
-        if (line.trim().startsWith('
-')) {
-if (!inCodeBlock) {
-flushList();
-inCodeBlock = true;
-codeLang = line.trim().slice(3) || 'code';
-codeContent = [];
-} else {
-inCodeBlock = false;
-const rawCode = codeContent.join('\n');
-const canRender = ['html', 'javascript', 'css', 'svg'].includes(codeLang.toLowerCase());
-html += `<pre><div class="code-lang">${codeLang}</div>
-<div style="position:absolute;top:5px;right:10px;display:flex;gap:10px;z-index:10;">
-${canRender ? `<div class="code-btn" onclick="updateCanvas(this.parentElement.parentElement.querySelector('code').innerText)">PREVIEW</div>` : ''}
-<div class="code-btn" onclick="copySnippet(this)">COPY</div>
-</div>
-<code>${highlight(rawCode)}</code></pre>`;
+        // 1. Code Block Logic
+        if (trimmed.startsWith('```')) {
+            if (!inCodeBlock) {
+                inCodeBlock = true;
+                codeLang = trimmed.slice(3) || 'code';
+                codeContent = [];
+            } else {
+                inCodeBlock = false;
+                fragment.appendChild(createCodeBlock(codeLang, codeContent.join('\n')));
+                activeList = null; 
+            }
+            continue;
+        }
+
+        if (inCodeBlock) {
+            codeContent.push(line);
+            continue;
+        }
+
+        // 2. Horizontal Rule
+        if (trimmed === '---' || trimmed === '***') {
+            fragment.appendChild(document.createElement('hr'));
+            activeList = null;
+            continue;
+        }
+
+        // 3. Headers
+        const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
+        if (headerMatch) {
+            const h = document.createElement(`h${headerMatch[1].length}`);
+            parseInlineToDOM(headerMatch[2], h);
+            fragment.appendChild(h);
+            activeList = null;
+            continue;
+        }
+
+        // 4. Lists
+        const ulMatch = line.match(/^[\*\-\+]\s+(.*)$/);
+        const olMatch = line.match(/^\d+\.\s+(.*)$/);
+        
+        if (ulMatch || olMatch) {
+            const type = ulMatch ? 'ul' : 'ol';
+            const content = ulMatch ? ulMatch[1] : olMatch[1];
+
+            if (!activeList || activeList.tagName.toLowerCase() !== type) {
+                activeList = document.createElement(type);
+                fragment.appendChild(activeList);
+            }
+            const li = document.createElement('li');
+            parseInlineToDOM(content, li);
+            activeList.appendChild(li);
+            continue;
+        }
+
+        // 5. Paragraphs / Breaks
+        if (trimmed === "") {
+            fragment.appendChild(document.createElement('br'));
+            activeList = null;
+        } else {
+            const p = document.createElement('p');
+            parseInlineToDOM(line, p);
+            fragment.appendChild(p);
+            activeList = null;
+        }
+    }
+
+    return fragment;
 }
-continue;
-}
-
-if (inCodeBlock) {
-codeContent.push(line);
-continue;
-}
-
-// 2. Horizontal Rule
-if (line.trim() === '---' || line.trim() === '***') {
-flushList();
-html += '<hr>';
-continue;
-}
-
-// 3. Headers
-const headerMatch = line.match(/^(#{1,6})\s+(.*)$/);
-if (headerMatch) {
-flushList();
-const level = headerMatch[1].length;
-html += `<h${level}>${parseInline(headerMatch[2])}</h${level}>`;
-continue;
-}
-
-// 4. Blockquotes
-if (line.startsWith('> ')) {
-flushList();
-html += `<blockquote>${parseInline(line.slice(2))}</blockquote>`;
-continue;
-}
-
-// 5. Lists (Unordered and Ordered)
-const ulMatch = line.match(/^[\*\-\+]\s+(.*)$/);
-const olMatch = line.match(/^\d+\.\s+(.*)$/);
-
-if (ulMatch || olMatch) {
-const currentType = ulMatch ? 'ul' : 'ol';
-const content = ulMatch ? ulMatch[1] : olMatch[1];
-
-if (!inList || listType !== currentType) {
-flushList();
-inList = true;
-listType = currentType;
-html += `<${listType}>`;
-}
-html += `<li>${parseInline(content)}</li>`;
-continue;
-}
-
-// 6. Paragraphs and Line Breaks
-if (line.trim() === "") {
-flushList();
-html += "<br>";
-} else {
-flushList();
-html += `<p>${parseInline(line)}</p>`;
-}
-}
-
-flushList(); // Close any trailing lists
-return `<div class="markdown-body">${html}</div>`;
-}
-
-
-
 
 
 
 function render(role, text, file = null) {
-const out = document.getElementById('output');
-const div = document.createElement('div');
-div.className = `msg ${role === 'user' ? 'user' : 'bot'}`;
+    const out = document.getElementById('output');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `msg ${role === 'user' ? 'user' : 'bot'}`;
 
-if (file && file.data) {
-const img = document.createElement('img');
-img.src = file.data;
-img.style = "max-width:260px; border-radius:12px; margin-bottom:12px; border: 1px solid var(--border);";
-div.appendChild(img);
-}
+    // Handle Image Attachments via DOM
+    if (file && file.data) {
+        const img = document.createElement('img');
+        img.src = file.data;
+        img.className = "message-image"; // Style this in CSS
+        img.style.maxWidth = "260px";
+        img.style.borderRadius = "12px";
+        msgDiv.appendChild(img);
+    }
 
-const content = document.createElement('div');
-content.innerHTML = mdParser(text);
-div.appendChild(content);
-out.appendChild(div);
-out.scrollTop = out.scrollHeight;
+    const contentDiv = document.createElement('div');
+    
+    // Split text into code blocks and regular text
+    const parts = text.split(/(```[\s\S]*?```)/g);
 
-if (role === 'bot') {
-const codeMatch = text.match(/```(?:html|)\n([\s\S]*?)```/i);
-if (codeMatch) updateCanvas(codeMatch[1]);
-}
+    parts.forEach(part => {
+        if (part.startsWith('```')) {
+            const match = part.match(/```(\w*)\n([\s\S]*?)```/);
+            if (match) {
+                const lang = match[1] || 'code';
+                const codeContent = match[2].trim();
+                contentDiv.appendChild(createCodeBlock(lang, codeContent));
+            }
+        } else if (part.trim()) {
+            const p = document.createElement('p');
+            // Handle simple line breaks
+            p.innerText = part.trim(); 
+            contentDiv.appendChild(p);
+        }
+    });
+
+    msgDiv.appendChild(contentDiv);
+    out.appendChild(msgDiv);
+    out.scrollTop = out.scrollHeight;
 }
 
 async function handleSend() {
